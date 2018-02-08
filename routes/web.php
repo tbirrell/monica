@@ -190,6 +190,12 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::put('/settings/personalization/contactfieldtypes/{contactfieldtype_id}', 'Settings\\PersonalizationController@editContactFieldType');
         Route::delete('/settings/personalization/contactfieldtypes/{contactfieldtype_id}', 'Settings\\PersonalizationController@destroyContactFieldType');
 
+        Route::get('/settings/personalization/genders', 'Settings\\GendersController@getGenderTypes');
+        Route::post('/settings/personalization/genders', 'Settings\\GendersController@storeGender');
+        Route::put('/settings/personalization/genders/{gender}', 'Settings\\GendersController@updateGender');
+        Route::delete('/settings/personalization/genders/{gender}/replaceby/{gender_id}', 'Settings\\GendersController@destroyAndReplaceGender');
+        Route::delete('/settings/personalization/genders/{gender}', 'Settings\\GendersController@destroyGender');
+
         Route::get('/settings/import', 'SettingsController@import')->name('.import');
         Route::get('/settings/import/report/{importjobid}', 'SettingsController@report')->name('.report');
         Route::get('/settings/import/upload', 'SettingsController@upload')->name('.upload');
@@ -203,10 +209,12 @@ Route::middleware(['auth', '2fa'])->group(function () {
 
         Route::get('/settings/subscriptions', 'Settings\\SubscriptionsController@index')->name('.subscriptions.index');
         Route::get('/settings/subscriptions/upgrade', 'Settings\\SubscriptionsController@upgrade')->name('.subscriptions.upgrade');
+        Route::get('/settings/subscriptions/upgrade/success', 'Settings\\SubscriptionsController@upgradeSuccess')->name('.subscriptions.upgrade.success');
         Route::post('/settings/subscriptions/processPayment', 'Settings\\SubscriptionsController@processPayment');
         Route::get('/settings/subscriptions/invoice/{invoice}', 'Settings\\SubscriptionsController@downloadInvoice');
         Route::get('/settings/subscriptions/downgrade', 'Settings\\SubscriptionsController@downgrade')->name('.subscriptions.downgrade');
         Route::post('/settings/subscriptions/downgrade', 'Settings\\SubscriptionsController@processDowngrade');
+        Route::get('/settings/subscriptions/downgrade/success', 'Settings\\SubscriptionsController@downgradeSuccess')->name('.subscriptions.upgrade.success');
 
         Route::get('/settings/tags', 'SettingsController@tags')->name('.tags');
         Route::get('/settings/tags/add', 'SettingsController@addUser')->name('.tags.add');

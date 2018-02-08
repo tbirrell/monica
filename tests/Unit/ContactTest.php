@@ -12,6 +12,18 @@ class ContactTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_it_belongs_to_a_gender()
+    {
+        $account = factory('App\Account')->create([]);
+        $gender = factory('App\Gender')->create([
+            'account_id' => $account->id,
+        ]);
+
+        $contact = factory('App\Contact')->create(['gender_id' => $gender->id]);
+
+        $this->assertTrue($contact->gender()->exists());
+    }
+
     public function testGetFirstnameReturnsNullWhenUndefined()
     {
         $contact = new Contact;
@@ -321,7 +333,7 @@ class ContactTest extends TestCase
         $contact->avatar_file_name = 'h0FMvD2cA3r2Q1EtGiv7aq9yl5BoXH2KIenDsoGX.jpg';
 
         $this->assertEquals(
-            '/storage/avatars/h0FMvD2cA3r2Q1EtGiv7aq9yl5BoXH2KIenDsoGX_100.jpg',
+            asset('/storage/avatars/h0FMvD2cA3r2Q1EtGiv7aq9yl5BoXH2KIenDsoGX_100.jpg'),
             $contact->getAvatarURL(100)
         );
     }

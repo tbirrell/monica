@@ -13,6 +13,21 @@ class AccountTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_it_has_many_genders()
+    {
+        $account = factory('App\Account')->create([]);
+        $gender = factory('App\Gender')->create([
+            'account_id' => $account->id,
+            'name' => 'test',
+        ]);
+        $gender = factory('App\Gender')->create([
+            'account_id' => $account->id,
+            'name' => 'test',
+        ]);
+
+        $this->assertTrue($account->genders()->exists());
+    }
+
     public function test_user_can_downgrade_with_only_one_user_and_no_pending_invitations()
     {
         $account = factory(Account::class)->create();
@@ -83,7 +98,7 @@ class AccountTest extends TestCase
         );
     }
 
-    public function test_user_is_subscribed_returns_true_if_plan_is_set()
+    public function test_user_is_subscribed_returns_true_if_monthly_plan_is_set()
     {
         $account = factory(Account::class)->create([]);
 
@@ -94,7 +109,26 @@ class AccountTest extends TestCase
             'name' => 'fakePlan',
         ]);
 
-        config(['monica.paid_plan_friendly_name' => 'fakePlan']);
+        config(['monica.paid_plan_monthly_friendly_name' => 'fakePlan']);
+
+        $this->assertEquals(
+            true,
+            $account->isSubscribed()
+        );
+    }
+
+    public function test_user_is_subscribed_returns_true_if_annual_plan_is_set()
+    {
+        $account = factory(Account::class)->create([]);
+
+        $plan = factory(\Laravel\Cashier\Subscription::class)->create([
+            'account_id' => $account->id,
+            'stripe_plan' => 'chandler_annual',
+            'stripe_id' => 'sub_C0R444pbxddhW7',
+            'name' => 'annualPlan',
+        ]);
+
+        config(['monica.paid_plan_annual_friendly_name' => 'annualPlan']);
 
         $this->assertEquals(
             true,
@@ -215,6 +249,97 @@ class AccountTest extends TestCase
         $this->assertEquals(
             3,
             $account->getRemindersForMonth(2)->count()
+        );
+    }
+
+    public function test_it_gets_the_id_of_the_subscribed_plan()
+    {
+        $user = $this->signIn();
+
+        $account = $user->account;
+
+        $plan = factory(\Laravel\Cashier\Subscription::class)->create([
+            'account_id' => $account->id,
+            'stripe_plan' => 'chandler_5',
+            'stripe_id' => 'sub_C0R444pbxddhW7',
+            'name' => 'fakePlan',
+        ]);
+
+        $this->assertEquals(
+            'chandler_5',
+            $account->getSubscribedPlanId()
+        );
+    }
+
+    public function test_it_gets_the_friendly_name_of_the_subscribed_plan()
+    {
+        $user = $this->signIn();
+
+        $account = $user->account;
+
+        $plan = factory(\Laravel\Cashier\Subscription::class)->create([
+            'account_id' => $account->id,
+            'stripe_plan' => 'chandler_5',
+            'stripe_id' => 'sub_C0R444pbxddhW7',
+            'name' => 'fakePlan',
+        ]);
+
+        $this->assertEquals(
+            'fakePlan',
+            $account->getSubscribedPlanName()
+        );
+    }
+
+    public function test_it_populates_the_account_with_three_default_genders()
+    {
+        $account = factory(Account::class)->create([]);
+        $account->populateDefaultGendersTable();
+
+        $this->assertEquals(
+            3,
+            $account->genders->count()
+        );
+    }
+
+    public function test_it_populates_the_account_with_the_right_default_genders()
+    {
+        $account = factory(Account::class)->create([]);
+        $account->populateDefaultGendersTable();
+
+        $this->assertDatabaseHas(
+            'genders',
+            ['name' => 'Man']
+        );
+
+        $this->assertDatabaseHas(
+            'genders',
+            ['name' => 'Woman']
+        );
+
+        $this->assertDatabaseHas(
+            'genders',
+            ['name' => 'Rather not say']
+        );
+    }
+
+    public function test_it_replaces_gender_with_another_gender()
+    {
+        $account = factory(Account::class)->create([]);
+        $gender1 = factory('App\Gender')->create([
+            'account_id' => $account->id,
+        ]);
+        $gender2 = factory('App\Gender')->create([
+            'account_id' => $account->id,
+        ]);
+
+        $contact = factory('App\Contact')->create(['account_id' => $account->id, 'gender_id' => $gender1]);
+        $contact = factory('App\Contact')->create(['account_id' => $account->id, 'gender_id' => $gender1]);
+        $contact = factory('App\Contact')->create(['account_id' => $account->id, 'gender_id' => $gender2]);
+
+        $account->replaceGender($gender1, $gender2);
+        $this->assertEquals(
+            3,
+            $gender2->contacts->count()
         );
     }
 }

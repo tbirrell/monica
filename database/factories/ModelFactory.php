@@ -139,6 +139,12 @@ $factory->define(App\Address::class, function (Faker\Generator $faker) {
     ];
 });
 
+$factory->define(App\Gender::class, function (Faker\Generator $faker) {
+    return [
+        'account_id' => 1,
+    ];
+});
+
 $factory->define(App\Entry::class, function (Faker\Generator $faker) {
     return [
         'account_id' => 1,
@@ -158,6 +164,12 @@ $factory->define(App\Progenitor::class, function (Faker\Generator $faker) {
 });
 
 $factory->define(App\Tag::class, function (Faker\Generator $faker) {
+    return [
+        'account_id' => 1,
+    ];
+});
+
+$factory->define(App\JournalEntry::class, function (Faker\Generator $faker) {
     return [
         'account_id' => 1,
     ];

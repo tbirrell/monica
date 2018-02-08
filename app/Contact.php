@@ -58,7 +58,7 @@ class Contact extends Model
         'first_name',
         'middle_name',
         'last_name',
-        'gender',
+        'gender_id',
         'account_id',
         'is_partial',
         'job',
@@ -104,6 +104,16 @@ class Contact extends Model
     public function account()
     {
         return $this->belongsTo('App\Account');
+    }
+
+    /**
+     * Get the gender of the contact.
+     *
+     * @return HasOne
+     */
+    public function gender()
+    {
+        return $this->belongsTo('App\Gender');
     }
 
     /**
@@ -800,7 +810,7 @@ class Contact extends Model
      * @param  int $size
      * @return string
      */
-    public function getAvatarURL($size = 100)
+    public function getAvatarURL($size = 110)
     {
         // it either returns null or the gravatar url if it's defined
         if (! $this->has_avatar) {
@@ -816,7 +826,7 @@ class Contact extends Model
         $avatar_extension = pathinfo($original_avatar_url, PATHINFO_EXTENSION);
         $resized_avatar = 'avatars/'.$avatar_filename.'_'.$size.'.'.$avatar_extension;
 
-        return Storage::disk($this->avatar_location)->url($resized_avatar);
+        return asset(Storage::disk($this->avatar_location)->url($resized_avatar));
     }
 
     /**
