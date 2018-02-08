@@ -78,9 +78,9 @@ class ContactsController extends Controller
                 $tagCount++;
             }
 
-            $contacts = $contacts->get();
+            $contacts = $contacts->where('is_group_proxy',0)->get();
         } else {
-            $contacts = $user->account->contacts()->real()->sortedBy($sort)->get();
+            $contacts = $user->account->contacts()->real()->sortedBy($sort)->where('is_group_proxy',0)->get();
         }
 
         if ($date_flag) {

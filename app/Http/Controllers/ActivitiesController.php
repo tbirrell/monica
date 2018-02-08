@@ -29,9 +29,22 @@ class ActivitiesController extends Controller
      */
     public function create(Contact $contact)
     {
+        $activity = new Activity;
+        $tag_id = $contact->group_id;
+
+        if ($contact->is_group()) { 
+            // if group, then get all people
+            $people = \App\Contact::whereHas('tags', function($q) use ($tag_id) {
+                    $q->where('id', $tag_id);
+                })->where('id', '<>', $contact->id)
+                  ->get();
+            $activity->contacts = $people;
+        }
+
         return view('activities.add')
             ->withContact($contact)
-            ->withActivity(new Activity);
+            ->withActivity($activity);
+
     }
 
     /**

@@ -1403,4 +1403,9 @@ class Contact extends Model
             return self::find($relatedContact->is_the_child_of);
         }
     }
+
+    public function is_group()
+    {
+        return ($this->is_group_proxy === 1);
+    }
 }
