@@ -61,10 +61,6 @@
       </div>
     @endforeach
 
-    <p class="sidebar-box-paragraph">
-      <a href="{{ route('people.relationships.add', $contact) }}">{{ trans('people.significant_other_cta') }}</a>
-    </p>
-
   @endif
 
 </div>
