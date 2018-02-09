@@ -108,25 +108,30 @@ class GroupsController extends Controller
      * @param  Contact $contact
      * @return \Illuminate\Http\Response
      */
-    public function show(Contact $contact)
+    public function show(Contact $group)
     {
-        // make sure we don't display a significant other if it's not set as a
-        // real contact
-        if ($contact->is_partial) {
+        // not a group
+        if (!$group->is_group()) {
             return redirect('/people');
         }
+        $tag_id = $group->group_id;
+        $contacts = Contact::whereHas('tags', function($q) use ($tag_id) {
+                                        $q->where('id', $tag_id);
+                                    })->get();
         
-        $contact->load(['notes' => function ($query) {
+        $group->load(['notes' => function ($query) {
             $query->orderBy('updated_at', 'desc');
         }]);
+
+        $reminders = $group->getRemindersAboutRelatives();
+
+        $group->last_consulted_at = \Carbon\Carbon::now(auth()->user()->timezone);
+        $group->save();
         
-        $reminders = $contact->getRemindersAboutRelatives();
+        $group->contacts = $contacts;
         
-        $contact->last_consulted_at = \Carbon\Carbon::now(auth()->user()->timezone);
-        $contact->save();
-        
-        return view('people.profile')
-        ->withContact($contact)
+        return view('groups.profile')
+        ->withContact($group)
         ->withReminders($reminders);
     }
     

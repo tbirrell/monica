@@ -61,6 +61,38 @@
               @include('groups.tasks.index')
             </div>
 
+            @foreach($contact->contacts as $person)
+              <li class="people-list-item bg-white">
+                <a href="{{ route('people.show', $person) }}">
+                  @if ($person->has_avatar == true)
+                    <img src="{{ $person->getAvatarURL(110) }}" width="43">
+                  @else
+                    @if (! is_null($person->gravatar_url))
+                      <img src="{{ $person->gravatar_url }}" width="43">
+                    @else
+                      @if (strlen($person->getInitials()) == 1)
+                        <div class="avatar one-letter" style="background-color: {{ $person->getAvatarColor() }};">
+                          {{ $person->getInitials() }}
+                        </div>
+                      @else
+                        <div class="avatar" style="background-color: {{ $person->getAvatarColor() }};">
+                          {{ $person->getInitials() }}
+                        </div>
+                      @endif
+                    @endif
+                  @endif
+                  <span class="people-list-item-name">
+                      {{ $person->getCompleteName(auth()->user()->name_order) }}
+                    </span>
+
+                  <span class="people-list-item-information">
+                      {{ trans('people.people_list_last_updated') }} {{ \App\Helpers\DateHelper::getShortDate($person->last_consulted_at) }}
+                    </span>
+                </a>
+              </li>
+
+            @endforeach
+
           </div>
         </div>
 

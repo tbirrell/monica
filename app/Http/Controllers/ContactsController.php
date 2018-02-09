@@ -171,7 +171,7 @@ class ContactsController extends Controller
         if ($contact->is_partial) {
             return redirect('/people');
         } else if ($contact->is_group()) {
-            return redirect('/groups/'.$contact->id);
+            return redirect()->route('group.show', ['id' => $contact->id]);
         }
 
         $contact->load(['notes' => function ($query) {
