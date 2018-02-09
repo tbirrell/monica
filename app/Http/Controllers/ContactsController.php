@@ -167,10 +167,11 @@ class ContactsController extends Controller
      */
     public function show(Contact $contact)
     {
-        // make sure we don't display a significant other if it's not set as a
         // real contact
         if ($contact->is_partial) {
             return redirect('/people');
+        } else if ($contact->is_group()) {
+            return redirect('/groups/'.$contact->id);
         }
 
         $contact->load(['notes' => function ($query) {

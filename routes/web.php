@@ -35,7 +35,10 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::post('/dashboard/setTab', 'DashboardController@setTab');
     });
     Route::post('/validate2fa', 'DashboardController@index');
-
+    
+    Route::get('/groups', 'GroupsController@index')->name('.index');
+    Route::get('/groups/{group}', 'GroupsController@show')->name('.show');
+    
     Route::group(['as' => 'people'], function () {
         Route::get('/people/', 'ContactsController@index')->name('.index');
         Route::get('/people/add', 'ContactsController@create')->name('.create');
