@@ -363,6 +363,9 @@
     .people-list {
       li {
         margin-bottom: 4px;
+        &.people-list-item {
+          margin-bottom: 0;
+        }
       }
     }
 
