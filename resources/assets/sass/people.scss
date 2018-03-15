@@ -624,6 +624,10 @@
   .people-list {
     margin-top: 20px;
 
+    .breadcrumb {
+     display: none;
+    }
+
     .people-list-mobile {
       border-bottom: 1px solid $border-color;
 
@@ -689,6 +693,7 @@
           height: 67px;
           width: 67px;
           padding-top: 11px;
+          position: static;
         }
 
         .tags {
