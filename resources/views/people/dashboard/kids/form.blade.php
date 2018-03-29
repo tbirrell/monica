@@ -41,7 +41,7 @@
     {{-- Approximate birthdate --}}
     <div class="form-check">
       <label class="form-check-label" for="birthdateApproximate_approximate">
-        <input type="radio" class="form-check-input" name="birthdate" id="birthdateApproximate_approximate" value="approximate" {{ is_null($kid->birthday_special_date_id) ? '' : ($kid->birthdate->is_age_based == true ? 'checked' : '') }}>
+        <input type="radio" class="form-check-input" name="birthdate" id="birthdateApproximate_approximate" value="approximate" {{ is_null($kid->birthday_special_date_id) ? '' : ($kid->birthdate->is_age_based ? 'checked' : '') }}>
 
         <div class="form-inline">
           {{ trans('people.information_edit_probably') }}
@@ -50,8 +50,6 @@
                   value="{{ (is_null($kid->birthdate)) ? 1 : $kid->birthdate->getAge() }}"
                   min="0"
                   max="120">
-
-          {{ trans('people.information_edit_probably_yo') }}
         </div>
       </label>
     </div>
@@ -59,7 +57,7 @@
     {{-- Exact birthdate --}}
     <div class="form-check">
       <label class="form-check-label" for="birthdateApproximate_exact">
-          <input type="radio" class="form-check-input" name="birthdate" id="birthdateApproximate_exact" value="exact" {{ is_null($kid->birthday_special_date_id) ? '' : ($kid->birthdate->is_age_based == true ? '' : 'checked') }}>
+          <input type="radio" class="form-check-input" name="birthdate" id="birthdateApproximate_exact" value="exact" {{ is_null($kid->birthday_special_date_id) ? '' : ($kid->birthdate->is_age_based ? '' : 'checked') }}>
 
           <div class="form-inline">
             {{ trans('people.information_edit_exact') }}

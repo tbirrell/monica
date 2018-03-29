@@ -11,6 +11,7 @@ use App\ContactFieldType;
 use App\Jobs\ResizeAvatars;
 use App\Helpers\VCardHelper;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Storage;
 
 class ContactsController extends Controller
@@ -30,12 +31,12 @@ class ContactsController extends Controller
             $user->updateContactViewPreference($sort);
         }
 
-        $date_flag = false;
+        $dateFlag = false;
 
         if (str_contains($sort, 'lastactivitydate')) {
             $date_sort = str_after($sort, 'lastactivitydate');
             $sort = 'firstnameAZ';
-            $date_flag = true;
+            $dateFlag = true;
         }
 
         $tags = null;
@@ -83,7 +84,7 @@ class ContactsController extends Controller
             $contacts = $user->account->contacts()->real()->sortedBy($sort)->where('is_group_proxy',0)->get();
         }
 
-        if ($date_flag) {
+        if ($dateFlag) {
             foreach ($contacts as $contact) {
                 $contact['sort_date'] = $contact->getLastActivityDate();
             }
@@ -183,7 +184,7 @@ class ContactsController extends Controller
 
         $reminders = $contact->getRemindersAboutRelatives();
 
-        $contact->last_consulted_at = \Carbon\Carbon::now(auth()->user()->timezone);
+        $contact->last_consulted_at = now(auth()->user()->timezone);
         $contact->save();
 
         return view('people.profile')
@@ -199,8 +200,20 @@ class ContactsController extends Controller
      */
     public function edit(Contact $contact)
     {
+        $age = (string) (! is_null($contact->birthdate) ? $contact->birthdate->getAge() : 0);
+        $birthdate = ! is_null($contact->birthdate) ? $contact->birthdate->date->format('Y-m-d') : now()->format('Y-m-d');
+        $day = ! is_null($contact->birthdate) ? $contact->birthdate->date->day : now()->day;
+        $month = ! is_null($contact->birthdate) ? $contact->birthdate->date->month : now()->month;
+
         return view('people.edit')
             ->withContact($contact)
+            ->withDays(\App\Helpers\DateHelper::getListOfDays())
+            ->withMonths(\App\Helpers\DateHelper::getListOfMonths())
+            ->withBirthdayState($contact->getBirthdayState())
+            ->withBirthdate($birthdate)
+            ->withDay($day)
+            ->withMonth($month)
+            ->withAge($age)
             ->withGenders(auth()->user()->account->genders);
     }
 
@@ -218,6 +231,7 @@ class ContactsController extends Controller
             'lastname' => 'max:100',
             'gender' => 'required',
             'file' => 'max:10240',
+            'birthdate' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -226,9 +240,13 @@ class ContactsController extends Controller
                 ->withErrors($validator);
         }
 
+        if (! $contact->setName($request->input('firstname'), null, $request->input('lastname'))) {
+            return back()
+                ->withInput()
+                ->withErrors('There has been a problem with saving the name.');
+        }
+
         $contact->gender_id = $request->input('gender');
-        $contact->first_name = $request->input('firstname');
-        $contact->last_name = $request->input('lastname');
 
         if ($request->file('avatar') != '') {
             $contact->has_avatar = true;
@@ -254,7 +272,7 @@ class ContactsController extends Controller
 
         $contact->save();
 
-        // Saves birthdate if defined
+        // Handling the case of the birthday
         $contact->removeSpecialDate('birthdate');
         switch ($request->input('birthdate')) {
             case 'unknown':
@@ -262,8 +280,24 @@ class ContactsController extends Controller
             case 'approximate':
                 $specialDate = $contact->setSpecialDateFromAge('birthdate', $request->input('age'));
                 break;
+            case 'almost':
+                $specialDate = $contact->setSpecialDate(
+                    'birthdate',
+                    0,
+                    $request->input('month'),
+                    $request->input('day')
+                );
+                $newReminder = $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $contact->first_name]));
+                break;
             case 'exact':
-                $specialDate = $contact->setSpecialDate('birthdate', $request->input('birthdate_year'), $request->input('birthdate_month'), $request->input('birthdate_day'));
+                $birthdate = $request->input('birthdayDate');
+                $birthdate = new \Carbon\Carbon($birthdate);
+                $specialDate = $contact->setSpecialDate(
+                    'birthdate',
+                    $birthdate->year,
+                    $birthdate->month,
+                    $birthdate->day
+                );
                 $newReminder = $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $contact->first_name]));
                 break;
         }
@@ -272,19 +306,7 @@ class ContactsController extends Controller
 
         dispatch(new ResizeAvatars($contact));
 
-        // for performance reasons, we check if a gravatar exists for this email
-        // address. if it does, we store the gravatar url in the database.
-        // while this is not ideal because the gravatar can change, at least we
-        // won't make constant call to gravatar to load the avatar on every
-        // page load.
-        $response = $contact->getGravatar(250);
-        if ($response != false and is_string($response)) {
-            $contact->gravatar_url = $response;
-            $contact->save();
-        } else {
-            $contact->gravatar_url = null;
-            $contact->save();
-        }
+        $contact->updateGravatar();
 
         return redirect('/people/'.$contact->id)
             ->with('success', trans('people.information_edit_success'));
@@ -303,22 +325,15 @@ class ContactsController extends Controller
         // this because I'll add more objects related to contacts in the future
         // and I don't want to have to think of deleting a row that matches a
         // contact.
+        //
         $tables = DB::select('SELECT table_name FROM information_schema.tables WHERE table_schema="monica"');
         foreach ($tables as $table) {
             $tableName = $table->table_name;
-            $tableData = DB::table($tableName)->get();
 
-            $contactIdRowExists = false;
-            foreach ($tableData as $data) {
-                foreach ($data as $columnName => $value) {
-                    if ($columnName == 'contact_id') {
-                        $contactIdRowExists = true;
-                    }
-                }
-            }
-
-            if ($contactIdRowExists == true) {
+            try {
                 DB::table($tableName)->where('contact_id', $contact->id)->delete();
+            } catch (QueryException $e) {
+                continue;
             }
         }
 
@@ -430,7 +445,7 @@ class ContactsController extends Controller
                 ]);
             })->get();
         } else {
-            $results = Contact::search($needle, $accountId);
+            $results = Contact::search($needle, $accountId, 20, 'created_at');
         }
 
         if (count($results) !== 0) {
