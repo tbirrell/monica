@@ -4,8 +4,61 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "ea7855ab97118d5abdc68e6ef33d7af8",
+    "content-hash": "7684389a0ef85388c9fb610f1b727fa7",
     "packages": [
+        {
+            "name": "appstract/laravel-meta",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/appstract/laravel-meta.git",
+                "reference": "ff85220ea155a5b79780c45db3df0f5e8d17a3d5"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/appstract/laravel-meta/zipball/ff85220ea155a5b79780c45db3df0f5e8d17a3d5",
+                "reference": "ff85220ea155a5b79780c45db3df0f5e8d17a3d5",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.6"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^5.7"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Appstract\\Meta\\MetaServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Appstract\\Meta\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Gijs Jorissen",
+                    "email": "hello@appstract.team",
+                    "homepage": "https://appstract.team",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Model meta",
+            "homepage": "https://github.com/appstract/laravel-meta",
+            "keywords": [
+                "appstract",
+                "laravel-meta"
+            ],
+            "time": "2018-01-22T15:09:04+00:00"
+        },
         {
             "name": "aws/aws-sdk-php",
             "version": "3.52.0",
