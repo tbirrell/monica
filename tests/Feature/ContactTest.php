@@ -2,13 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Gift;
 use App\Contact;
 use Tests\FeatureTestCase;
+use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class ContactTest extends FeatureTestCase
 {
-    use DatabaseTransactions;
+    use DatabaseTransactions, WithFaker;
 
     /**
      * Returns an array containing a user object along with
@@ -35,24 +37,6 @@ class ContactTest extends FeatureTestCase
         $response->assertSee(
             $contact->getCompleteName()
         );
-    }
-
-    public function test_user_can_add_a_contact()
-    {
-        list($user, $contact) = $this->fetchUser();
-
-        $params = [
-            'gender' => 'male',
-            'first_name' => $this->faker->firstName,
-            'last_name' => $this->faker->lastName,
-        ];
-
-        $this->post('/people', $params);
-
-        // Assert the contact has been added for the correct user.
-        $params['account_id'] = $user->account_id;
-
-        $this->assertDatabaseHas('contacts', $params);
     }
 
     public function test_user_can_be_reminded_about_an_event_once()
@@ -135,6 +119,41 @@ class ContactTest extends FeatureTestCase
         );
     }
 
+    public function test_user_can_edit_a_gift_()
+    {
+        list($user, $contact) = $this->fetchUser();
+
+        $old_gift = factory(Gift::class)->create([
+            'contact_id' => $contact->id,
+            'account_id' => $user->account_id,
+        ]);
+
+        $gift = [
+            'offered' => 'idea',
+            'name' => $this->faker->word,
+            'url' => $this->faker->url,
+            'value' => $this->faker->numberBetween(1, 2000),
+            'comment' => $this->faker->sentence(),
+        ];
+
+        $this->post(
+            '/people/'.$contact->id.'/gifts/'.$old_gift->id.'/update',
+            $gift
+        );
+
+        array_shift($gift);
+
+        $this->assertDatabaseHas(
+            'gifts',
+            $gift + [
+                'is_an_idea' => true,
+                'has_been_offered' => false,
+                'contact_id' => $contact->id,
+                'account_id' => $user->account_id,
+            ]
+        );
+    }
+
     public function test_user_can_be_in_debt_to_a_contact()
     {
         list($user, $contact) = $this->fetchUser();
@@ -191,17 +210,6 @@ class ContactTest extends FeatureTestCase
         $this->changeArrayKey('food', 'food_preferencies', $food);
 
         $this->assertDatabaseHas('contacts', $food);
-    }
-
-    public function test_a_contact_can_be_deleted()
-    {
-        list($user, $contact) = $this->fetchUser();
-
-        $this->delete('/people/'.$contact->id);
-
-        $this->assertDatabaseMissing('contacts', [
-            'id' => $contact->id,
-        ]);
     }
 
     private function changeArrayKey($from, $to, &$array = [])

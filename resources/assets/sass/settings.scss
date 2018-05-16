@@ -35,17 +35,6 @@
     }
   }
 
-  h3 {
-    border-bottom: 1px solid $border-color;
-    font-size: 20px;
-    font-weight: 400;
-    margin-bottom: 20px;
-
-    &:not(:first-child) {
-      margin-top: 30px;
-    }
-  }
-
   .settings-reset,
   .settings-delete {
     border: 1px solid;
@@ -88,6 +77,9 @@
 
     .table-cell.actions {
       text-align: right;
+      &.rtl {
+        text-align: left;
+      }
     }
   }
 
@@ -265,6 +257,13 @@
         margin-left: 20px;
         list-style-type: disc;
       }
+
+      &.rtl {
+        ul {
+          margin-left: 0;
+          margin-right: 20px;
+        }
+      }
     }
   }
 
@@ -276,6 +275,9 @@
 
     .actions {
       text-align: right;
+      &.rtl {
+        text-align: left;
+      }
     }
   }
 }

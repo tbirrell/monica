@@ -2,12 +2,24 @@
 
 namespace App\Helpers;
 
-use Auth;
 use Carbon\Carbon;
 use Jenssegers\Date\Date;
 
 class DateHelper
 {
+    /**
+     * Set the locale of the instance for Date frameworks.
+     *
+     * @param string
+     * @return string
+     */
+    public static function setLocale($locale)
+    {
+        $locale = $locale ?: config('app.locale');
+        Carbon::setLocale($locale);
+        Date::setLocale($locale);
+    }
+
     /**
      * Creates a Carbon object.
      *
@@ -17,9 +29,7 @@ class DateHelper
      */
     public static function createDateFromFormat($date, $timezone)
     {
-        $date = Carbon::createFromFormat('Y-m-d H:i:s', $date, $timezone);
-
-        return $date;
+        return Carbon::createFromFormat('Y-m-d H:i:s', $date, $timezone);
     }
 
     /**
@@ -29,23 +39,10 @@ class DateHelper
      * @param Carbon $date
      * @return string
      */
-    public static function getShortDate($date, $locale = null)
+    public static function getShortDate($date)
     {
         $date = new Date($date);
-        $locale = self::getLocale($locale);
-
-        switch ($locale) {
-            case 'en':
-                $format = 'M d, Y';
-                break;
-            case 'pt-br':
-            case 'fr':
-                $format = 'd M Y';
-                break;
-            default:
-                $format = 'M d, Y';
-                break;
-        }
+        $format = trans('format.short_date_year', [], Date::getLocale());
 
         return $date->format($format);
     }
@@ -57,11 +54,10 @@ class DateHelper
      * @param Carbon $date
      * @return string
      */
-    public static function getShortMonth($date, $locale = null)
+    public static function getShortMonth($date)
     {
         $date = new Date($date);
-        $locale = self::getLocale($locale);
-        $format = 'M';
+        $format = trans('format.short_month', [], Date::getLocale());
 
         return $date->format($format);
     }
@@ -73,11 +69,10 @@ class DateHelper
      * @param Carbon $date
      * @return string
      */
-    public static function getShortDay($date, $locale = null)
+    public static function getShortDay($date)
     {
         $date = new Date($date);
-        $locale = self::getLocale($locale);
-        $format = 'D';
+        $format = trans('format.short_day', [], Date::getLocale());
 
         return $date->format($format);
     }
@@ -89,23 +84,10 @@ class DateHelper
      * @param Carbon $date
      * @return string
      */
-    public static function getShortDateWithoutYear($date, $locale = null)
+    public static function getShortDateWithoutYear($date)
     {
         $date = new Date($date);
-        $locale = self::getLocale($locale);
-
-        switch ($locale) {
-            case 'en':
-                $format = 'M d';
-                break;
-            case 'pt-br':
-            case 'fr':
-                $format = 'd M';
-                break;
-            default:
-                $format = 'M d';
-                break;
-        }
+        $format = trans('format.short_date', [], Date::getLocale());
 
         return $date->format($format);
     }
@@ -117,43 +99,12 @@ class DateHelper
      * @param Carbon $date
      * @return string
      */
-    public static function getShortDateWithTime($date, $locale = null)
+    public static function getShortDateWithTime($date)
     {
         $date = new Date($date);
-        $locale = self::getLocale($locale);
-
-        switch ($locale) {
-            case 'en':
-                $format = 'M d, Y H:i';
-                break;
-            case 'pt-br':
-            case 'fr':
-                $format = 'd M Y H:i';
-                break;
-            default:
-                $format = 'M d, Y H:i';
-        }
+        $format = trans('format.short_date_year_time', [], Date::getLocale());
 
         return $date->format($format);
-    }
-
-    /**
-     * Returns the locale of the instance, if defined. English by default.
-     *
-     * @param string
-     * @return string
-     */
-    public static function getLocale($locale = null)
-    {
-        if (Auth::check()) {
-            $locale = $locale ?: Auth::user()->locale;
-        } else {
-            $locale = $locale ?: 'en';
-        }
-
-        Date::setLocale($locale);
-
-        return $locale;
     }
 
     /**
@@ -187,9 +138,97 @@ class DateHelper
      */
     public static function getMonthAndYear(int $month)
     {
-        $month = Carbon::now()->addMonthsNoOverflow($month)->format('M');
-        $year = Carbon::now()->addMonthsNoOverflow($month)->format('Y');
+        $date = Date::now()->addMonthsNoOverflow($month);
+        $format = trans('format.short_month_year', [], Date::getLocale());
 
-        return $month.' '.$year;
+        return $date->format($format);
+    }
+
+    /**
+     * Gets the next theoritical billing date.
+     * This is used on the Upgrade page to tell the user when the next billing
+     * date would be if he subscribed.
+     *
+     * @param  string
+     * @return Carbon
+     */
+    public static function getNextTheoriticalBillingDate(String $interval)
+    {
+        if ($interval == 'monthly') {
+            return Date::now()->addMonth();
+        }
+
+        return Date::now()->addYear();
+    }
+
+    /**
+     * Gets a list of all the months in a year.
+     *
+     * @return array
+     */
+    public static function getListOfMonths()
+    {
+        $months = collect([]);
+        $currentDate = Date::parse('2000-01-01');
+        $format = trans('format.full_month', [], Date::getLocale());
+
+        for ($month = 1; $month <= 12; $month++) {
+            $currentDate->month = $month;
+            $months->push([
+                'id' => $month,
+                'name' => mb_convert_case($currentDate->format($format), MB_CASE_TITLE, 'UTF-8'),
+            ]);
+        }
+
+        return $months;
+    }
+
+    /**
+     * Gets a list of all the days in a month.
+     *
+     * @return array
+     */
+    public static function getListOfDays()
+    {
+        $days = collect([]);
+        for ($day = 1; $day <= 31; $day++) {
+            $days->push(['id' => $day, 'name' => $day]);
+        }
+
+        return $days;
+    }
+
+    /**
+     * Gets a list of all the hours in a day.
+     *
+     * @return array
+     */
+    public static function getListOfHours()
+    {
+        $currentDate = Date::parse('2000-01-01 00:00:00');
+        $format = trans('format.full_hour', [], Date::getLocale());
+
+        $hours = collect([]);
+        for ($hour = 1; $hour <= 24; $hour++) {
+            $currentDate->hour = $hour;
+            $hours->push([
+                'id' => "$hour:00",
+                'name' => $currentDate->format($format),
+            ]);
+        }
+
+        return $hours;
+    }
+
+    /**
+     * Removes a given number of days of a date given in parameter.
+     *
+     * @param  Carbon  $date
+     * @param  int    $numberOfDaysBefore
+     * @return Carbon
+     */
+    public static function getDateMinusGivenNumberOfDays(Carbon $date, int $numberOfDaysBefore)
+    {
+        return $date->subDays($numberOfDaysBefore);
     }
 }

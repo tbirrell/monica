@@ -1,4 +1,10 @@
 <?php
+
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -14,7 +20,7 @@ if (App::environment('production')) {
     URL::forceScheme('https');
 }
 
-Route::get('/', 'Auth\LoginController@showLoginForm')->name('login');
+Route::get('/', 'Auth\LoginController@showLoginOrRegister')->name('login');
 
 Auth::routes();
 
@@ -29,18 +35,20 @@ Route::middleware(['auth'])->group(function () {
 
 Route::middleware(['auth', '2fa'])->group(function () {
     Route::group(['as' => 'dashboard'], function () {
-        Route::get('/dashboard/', 'DashboardController@index')->name('.index');
+        Route::get('/dashboard', 'DashboardController@index')->name('.index');
         Route::get('/dashboard/calls', 'DashboardController@calls');
         Route::get('/dashboard/notes', 'DashboardController@notes');
         Route::post('/dashboard/setTab', 'DashboardController@setTab');
     });
     Route::post('/validate2fa', 'DashboardController@index');
 
+    Route::get('/changelog', 'ChangelogController@index');
+
     Route::group(['as' => 'people'], function () {
-        Route::get('/people/', 'ContactsController@index')->name('.index');
+        Route::get('/people', 'ContactsController@index')->name('.index');
         Route::get('/people/add', 'ContactsController@create')->name('.create');
         Route::get('/people/notfound', 'ContactsController@missing')->name('.missing');
-        Route::post('/people/', 'ContactsController@store')->name('.store');
+        Route::post('/people', 'ContactsController@store')->name('.store');
 
         // Dashboard
         Route::get('/people/{contact}', 'ContactsController@show')->name('.show');
@@ -59,7 +67,7 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::get('/people/{contact}/vcard', 'ContactsController@vcard');
 
         // Addresses
-        Route::get('/people/{contact}/countries', 'Contacts\\AddressesController@getCountries');
+        Route::get('/countries', 'Contacts\\AddressesController@getCountries');
         Route::get('/people/{contact}/addresses', 'Contacts\\AddressesController@get');
         Route::post('/people/{contact}/addresses', 'Contacts\\AddressesController@store');
         Route::put('/people/{contact}/addresses/{address}', 'Contacts\\AddressesController@edit');
@@ -87,23 +95,12 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::get('/people/{contact}/food', 'ContactsController@editFoodPreferencies')->name('.food');
         Route::post('/people/{contact}/food/save', 'ContactsController@updateFoodPreferencies')->name('.food.update');
 
-        // Kid
-        Route::get('/people/{contact}/kids/add', 'Contacts\\KidsController@create')->name('.kids.add');
-        Route::post('/people/{contact}/kids/store', 'Contacts\\KidsController@store')->name('.kids.store');
-        Route::post('/people/{contact}/kids/storeExistingContact', 'Contacts\\KidsController@storeExistingContact')->name('.kids.storeexisting');
-        Route::get('/people/{contact}/kids/{kid}/edit', 'Contacts\\KidsController@edit')->name('.kids.edit');
-        Route::put('/people/{contact}/kids/{kid}', 'Contacts\\KidsController@update')->name('.kids.update');
-        Route::delete('/people/{contact}/kids/{kid}', 'Contacts\\KidsController@destroy')->name('.kids.delete');
-        Route::post('/people/{contact}/kids/{kid}/unlink', 'Contacts\\KidsController@unlink')->name('.kids.unlink');
-
-        // Relationships (significant others)
-        Route::get('/people/{contact}/relationships/add', 'Contacts\\RelationshipsController@create')->name('.relationships.add');
+        // Relationships
+        Route::get('/people/{contact}/relationships/new', 'Contacts\\RelationshipsController@new');
         Route::post('/people/{contact}/relationships/store', 'Contacts\\RelationshipsController@store')->name('.relationships.store');
-        Route::post('/people/{contact}/relationships/storeExistingContact', 'Contacts\\RelationshipsController@storeExistingContact')->name('.relationships.storeexisting');
-        Route::get('/people/{contact}/relationships/{partner}/edit', 'Contacts\\RelationshipsController@edit')->name('.relationships.edit');
-        Route::put('/people/{contact}/relationships/{partner}', 'Contacts\\RelationshipsController@update')->name('.relationships.update');
-        Route::delete('/people/{contact}/relationships/{partner}', 'Contacts\\RelationshipsController@destroy')->name('.relationships.delete');
-        Route::post('/people/{contact}/relationships/{partner}/unlink', 'Contacts\\RelationshipsController@unlink')->name('.relationships.unlink');
+        Route::get('/people/{contact}/relationships/{otherContact}/edit', 'Contacts\\RelationshipsController@edit')->name('.relationships.edit');
+        Route::post('/people/{contact}/relationships/{otherContact}', 'Contacts\\RelationshipsController@update')->name('.relationships.update');
+        Route::delete('/people/{contact}/relationships/{otherContact}', 'Contacts\\RelationshipsController@destroy')->name('.relationships.delete');
 
         // Pets
         Route::get('/people/{contact}/pets', 'Contacts\\PetsController@get');
@@ -152,6 +149,9 @@ Route::middleware(['auth', '2fa'])->group(function () {
 
         // Search
         Route::post('/people/search', 'ContactsController@search')->name('people.search');
+
+        // Stay in touch information
+        Route::post('/people/{contact}/stayintouch', 'ContactsController@stayInTouch');
     });
 
     // Activities
@@ -190,6 +190,18 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::put('/settings/personalization/contactfieldtypes/{contactfieldtype_id}', 'Settings\\PersonalizationController@editContactFieldType');
         Route::delete('/settings/personalization/contactfieldtypes/{contactfieldtype_id}', 'Settings\\PersonalizationController@destroyContactFieldType');
 
+        Route::get('/settings/personalization/genders', 'Settings\\GendersController@getGenderTypes');
+        Route::post('/settings/personalization/genders', 'Settings\\GendersController@storeGender');
+        Route::put('/settings/personalization/genders/{gender}', 'Settings\\GendersController@updateGender');
+        Route::delete('/settings/personalization/genders/{gender}/replaceby/{gender_id}', 'Settings\\GendersController@destroyAndReplaceGender');
+        Route::delete('/settings/personalization/genders/{gender}', 'Settings\\GendersController@destroyGender');
+
+        Route::get('/settings/personalization/reminderrules', 'Settings\\ReminderRulesController@get');
+        Route::post('/settings/personalization/reminderrules/{reminderRule}', 'Settings\\ReminderRulesController@toggle');
+
+        Route::get('/settings/personalization/modules', 'Settings\\ModulesController@get');
+        Route::post('/settings/personalization/modules/{module}', 'Settings\\ModulesController@toggle');
+
         Route::get('/settings/import', 'SettingsController@import')->name('.import');
         Route::get('/settings/import/report/{importjobid}', 'SettingsController@report')->name('.report');
         Route::get('/settings/import/upload', 'SettingsController@upload')->name('.upload');
@@ -203,10 +215,12 @@ Route::middleware(['auth', '2fa'])->group(function () {
 
         Route::get('/settings/subscriptions', 'Settings\\SubscriptionsController@index')->name('.subscriptions.index');
         Route::get('/settings/subscriptions/upgrade', 'Settings\\SubscriptionsController@upgrade')->name('.subscriptions.upgrade');
+        Route::get('/settings/subscriptions/upgrade/success', 'Settings\\SubscriptionsController@upgradeSuccess')->name('.subscriptions.upgrade.success');
         Route::post('/settings/subscriptions/processPayment', 'Settings\\SubscriptionsController@processPayment');
         Route::get('/settings/subscriptions/invoice/{invoice}', 'Settings\\SubscriptionsController@downloadInvoice');
         Route::get('/settings/subscriptions/downgrade', 'Settings\\SubscriptionsController@downgrade')->name('.subscriptions.downgrade');
         Route::post('/settings/subscriptions/downgrade', 'Settings\\SubscriptionsController@processDowngrade');
+        Route::get('/settings/subscriptions/downgrade/success', 'Settings\\SubscriptionsController@downgradeSuccess')->name('.subscriptions.upgrade.success');
 
         Route::get('/settings/tags', 'SettingsController@tags')->name('.tags');
         Route::get('/settings/tags/add', 'SettingsController@addUser')->name('.tags.add');

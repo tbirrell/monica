@@ -3,13 +3,13 @@
 return [
 
     //index
-    'people_list_number_kids' => '{0} 0 bambini|{1,1} 1 bambino|{2,*} :count bambini',
+    'people_list_number_kids' => '1 bambino|:count bambini',
     'people_list_last_updated' => 'Consultati per ultimi:',
     'people_list_number_reminders' => ':count promemoria',
     'people_list_blank_title' => 'Non ci sono contatti nel tuo account',
     'people_list_blank_cta' => 'Aggiungi qualcuno',
     'people_list_sort' => 'Ordina',
-    'people_list_stats' => ':count contatti',
+    'people_list_stats' => '1 contatto|:count contatti',
     'people_list_firstnameAZ' => 'Ordina per nome A → Z',
     'people_list_firstnameZA' => 'Ordina per nome Z → A',
     'people_list_lastnameAZ' => 'Ordina per cognome A → Z',
@@ -18,12 +18,12 @@ return [
     'people_list_lastactivitydateOldtoNew' => 'Sort by last activity date oldest to newest',
     'people_list_filter_tag' => 'Tutti i contatti etichettati con ',
     'people_list_clear_filter' => 'Reimposta filtro',
-    'people_list_contacts_per_tags' => '{0} 0 contatti|{1,1} 1 contatto|{2,*} :count contatti',
+    'people_list_contacts_per_tags' => '1 contatto|:count contatti',
     'people_search' => 'Cerca nei tuoi contatti...',
     'people_search_no_results' => 'Nessun contatto trovato :(',
     'people_list_account_usage' => 'Utilizzo account: :current/:limit contatti',
-    'people_list_account_upgrade_title' => "Effettua l'upgrade del tuo account per poter usufruire delle sue piene funzionalitá.",
-    'people_list_account_upgrade_cta' => "Effettua l'upgrade ora",
+    'people_list_account_upgrade_title' => 'Effettua l\'upgrade del tuo account per poter usufruire delle sue piene funzionalitá.',
+    'people_list_account_upgrade_cta' => 'Effettua l\'upgrade ora',
 
     // people add
     'people_add_title' => 'Aggiungi una persona',
@@ -32,7 +32,7 @@ return [
     'people_add_middlename' => 'Secondo nome (facoltativo)',
     'people_add_lastname' => 'Cognome (facoltativo)',
     'people_add_cta' => 'Aggiungi questa persona',
-    'people_save_and_add_another_cta' => "Salva e aggiungi un'altra persona",
+    'people_save_and_add_another_cta' => 'Salva e aggiungi un\'altra persona',
     'people_add_success' => 'Contatto creato con successo',
     'people_add_gender' => 'Sesso',
     'people_delete_success' => 'Il contatto è stato rimosso',
@@ -40,7 +40,10 @@ return [
     'people_delete_click_here' => 'clicca qui',
     'people_delete_confirmation' => 'Rimuovere questo contatto? Questo cambio è permanente.',
     'people_add_birthday_reminder' => 'Fai gli auguri di compleanno a :name',
-    'people_add_import' => 'Vuoi <a href="/settings/import">importare i tuoi contatti</a>?',
+    'people_add_import' => 'Vuoi <a href=":url">importare i tuoi contatti</a>?',
+    'people_edit_email_error' => 'There is already a contact in your account with this email address. Please choose another one.',
+    'people_export' => 'Export as vCard',
+    'people_add_reminder_for_birthday' => 'Create an annual reminder for the birthday',
 
     // show
     'section_contact_information' => 'Informazioni sul contatto',
@@ -48,6 +51,7 @@ return [
     'section_personal_reminders' => 'Promemoria',
     'section_personal_tasks' => 'Cose da fare',
     'section_personal_gifts' => 'Regali',
+    'section_personal_notes' => 'Notes',
 
     //
     'link_to_list' => 'Lista dei contatti',
@@ -55,6 +59,15 @@ return [
     // Header
     'edit_contact_information' => 'Modifica informazioni del contatto',
     'call_button' => 'Aggiungi chiamata',
+
+    // Stay in touch
+    'stay_in_touch' => 'Stay in touch',
+    'stay_in_touch_frequency' => 'Stay in touch every day|Stay in touch every {count} days',
+    'stay_in_touch_invalid' => 'The frequency must be a number greater than 0.',
+    'stay_in_touch_premium' => 'You need to upgrade your account to make use of this feature',
+    'stay_in_touch_modal_title' => 'Stay in touch',
+    'stay_in_touch_modal_desc' => 'We can remind you by email to keep in touch with {firstname} at a regular interval.',
+    'stay_in_touch_modal_label' => 'Send me an email every...',
 
     // Calls
     'modal_call_title' => 'Aggiungi chiamata',
@@ -90,10 +103,10 @@ return [
     'information_edit_firstname' => 'Nome',
     'information_edit_lastname' => 'Cognome (facoltativo)',
     'information_edit_linkedin' => 'Profilo LinkedIn (facoltativo)',
+    'information_edit_unknown' => 'Non conosco l\'età di questa persona',
     'information_edit_probably' => 'Questa persona probabilmente ha',
-    'information_edit_probably_yo' => 'anni',
+    'information_edit_not_year' => 'I know the day and month of the birthdate of this person, but not the year…',
     'information_edit_exact' => 'Conosco la data di nascita esatta di questa persona, che è il',
-    'information_edit_help' => 'Se indichi la data di nascita esatta di questa persona creeremo un promemoria per te - ti verrà notificato l\'arrivo del suo compleanno annualmente.',
     'information_no_linkedin_defined' => 'Nessun profilo LinkedIn',
     'information_no_work_defined' => 'Nessuna informazione professionale',
     'information_work_at' => 'alla :company',
@@ -102,6 +115,7 @@ return [
     'work_edit_title' => 'Aggiorna informazioni professionali di :name',
     'work_edit_job' => 'Titolo (facoltativo)',
     'work_edit_company' => 'Azienda (facoltativa)',
+    'work_information' => 'Work information',
 
     // food preferencies
     'food_preferencies_add_success' => 'Le preferenze alimentari sono state salvate',
@@ -117,8 +131,6 @@ return [
     'reminders_blank_add_activity' => 'Aggiungi un promemoria',
     'reminders_add_title' => 'Cosa vorresti ricordare a proposito di :name?',
     'reminders_add_description' => 'Ricordami per piacere di...',
-    'reminders_add_predefined' => 'Promemoria predefinito',
-    'reminders_add_custom' => 'Promemoria personalizzato',
     'reminders_add_next_time' => 'Quando vorresti ti fosse ricordato?',
     'reminders_add_once' => 'Ricordamelo una sola volta',
     'reminders_add_recurrent' => 'Ricordamelo ogni',
@@ -130,6 +142,7 @@ return [
     'reminders_delete_success' => 'Il promemoria è stato rimosso',
     'reminders_update_success' => 'The reminder has been updated successfully',
 
+    'reminder_frequency_day' => 'every day|every :number days',
     'reminder_frequency_week' => 'ogni settimana|ogni :number settimane',
     'reminder_frequency_month' => 'ogni mese|ogni :number mesi',
     'reminder_frequency_year' => 'ogni anno|ogni :number anni',
@@ -143,56 +156,27 @@ return [
     'reminders_type_week' => 'settimana',
     'reminders_type_month' => 'mese',
     'reminders_type_year' => 'anno',
-    'reminders_free_plan_warning' => "Nella versione gratuita di Monica non vengono inviate email. Per ricevere promemoria via email, effettua l'upgrade.",
+    'reminders_birthday' => 'Birthday of :name',
+    'reminders_free_plan_warning' => 'Nella versione gratuita di Monica non vengono inviate email. Per ricevere promemoria via email, effettua l\'upgrade.',
 
-    // significant other
-    'significant_other_sidebar_title' => 'Partner',
-    'significant_other_cta' => 'Aggiungi partner',
-    'significant_other_add_title' => 'Chi è il partner di :name?',
-    'significant_other_add_firstname' => 'Nome',
-    'significant_other_add_unknown' => 'Non conosco l\'età di questa persona',
-    'significant_other_add_probably' => 'Questa persona probabilmente ha',
-    'significant_other_add_probably_yo' => 'anni',
-    'significant_other_add_exact' => 'Conosco la data di nascita esatta di questa persona, che è il',
-    'significant_other_add_help' => 'Se indichi la data di nascita esatta di questa persona creeremo un promemoria per te - ti verrà notificato l\'arrivo del suo compleanno annualmente.',
-    'significant_other_add_cta' => 'Aggiungi partner',
-    'significant_other_edit_cta' => 'Modifica partner',
-    'significant_other_delete_confirmation' => 'Rimuovere il partner di questo contatto? Questo cambio è permanente.',
-    'significant_other_add_success' => 'Partner aggiunto',
-    'significant_other_edit_success' => 'Partner modificato',
-    'significant_other_delete_success' => 'Partner rimosso',
-    'significant_other_add_birthday_reminder' => 'Fai gli auguri di buon compleanno a :name, partner di :contact_firstname',
-
-    // kids
-    'kids_sidebar_title' => 'Figli',
-    'kids_sidebar_cta' => 'Aggiungi un\'altro figlio',
-    'kids_blank_cta' => 'Aggiungi figlio',
-    'kids_add_title' => 'Aggiungi figlio',
-    'kids_add_boy' => 'Maschio',
-    'kids_add_girl' => 'Femmina',
-    'kids_add_gender' => 'Sesso',
-    'kids_add_firstname' => 'Nome',
-    'kids_add_firstname_help' => 'Immaginiamo il cognome sia :name',
-    'kids_add_lastname' => 'Cognome (facoltativo)',
-    'kids_add_also_create' => 'Aggiungi anche questa persona come Contatto.',
-    'kids_add_also_desc' => 'Ció ti permetterá di trattare questo figlio come un qualsiasi altro contatto.',
-    'kids_add_no_existing_contact' => 'Non hai contatti che possono essere figli di :name al momento.',
-    'kids_add_existing_contact' => 'Scegli un contatto esistente come figlio di :name',
-    'kids_add_probably' => 'Questa persona probabilmente ha ',
-    'kids_add_probably_yo' => 'anni',
-    'kids_add_exact' => 'Conosco la data di nascita esatta di questa persona, che è il',
-    'kids_add_help' => 'Se indichi la data di nascita esatta di questa persona creeremo un promemoria per te - ti verrà notificato l\'arrivo del suo compleanno annualmente.',
-    'kids_add_cta' => 'Aggiungi figlio',
-    'kids_edit_title' => 'Modifica informazioni su :name',
-    'kids_delete_confirmation' => 'Rimuovere questo figlio? Questo cambio è permanente.',
-    'kids_add_success' => 'Figlio aggiunto',
-    'kids_update_success' => 'Figlio modificato',
-    'kids_delete_success' => 'Figlio rimosso',
-    'kids_add_birthday_reminder' => 'Fai gli auguri di buon compleanno a :name, figlio di :contact_firstname',
-    'kids_unlink_confirmation' => 'Rimuovere questa relazione? Il bambino non sará cancellato - solo la relazione con il genitore.',
+    // relationships
+    'relationship_form_add' => 'Add a new relationship',
+    'relationship_form_edit' => 'Edit an existing relationship',
+    'relationship_form_is_with' => 'This person is...',
+    'relationship_form_add_choice' => 'Who is the relationship with?',
+    'relationship_form_create_contact' => 'Add a new person',
+    'relationship_form_associate_contact' => 'An existing contact',
+    'relationship_form_associate_dropdown' => 'Select an existing contact from the dropdown below',
+    'relationship_form_also_create_contact' => 'Create a Contact entry for this person.',
+    'relationship_form_add_description' => 'This will let you treat this significant other like any other contact.',
+    'relationship_form_add_no_existing_contact' => 'You don’t have any contacts who can be related to :name at the moment.',
+    'relationship_delete_confirmation' => 'Are you sure you want to delete this relationship? Deletion is permanent.',
+    'relationship_unlink_confirmation' => 'Are you sure you want to delete this relationship? This person will not be deleted – only the relationship between the two.',
+    'relationship_form_add_success' => 'The relationship has been successfully set.',
+    'relationship_form_deletion_success' => 'The relationship has been deleted.',
 
     // tasks
-    'tasks_blank_title' => 'Sembra tu non abbia nulla da fare che riguardi :name',
+    'tasks_blank_title' => 'You don’t have any tasks yet.',
     'tasks_form_title' => 'Titolo',
     'tasks_form_description' => 'Descrizione (facoltativa)',
     'tasks_add_task' => 'Aggiungi compito',
@@ -209,16 +193,15 @@ return [
     'activity_type_watched_movie_at_home' => 'visto un film, a casa',
     'activity_type_talked_at_home' => 'parlato, a casa',
     'activity_type_did_sport_activities_together' => 'fatto sport assieme',
-    'activity_type_ate_at_his_place' => 'mangiato a casa sua',
-    'activity_type_ate_at_her_place' => 'mangiato a casa sua',
+    'activity_type_ate_at_his_place' => 'ate at their place',
     'activity_type_went_bar' => 'andati al bar',
     'activity_type_ate_at_home' => 'mangiato a casa',
     'activity_type_picknicked' => 'fatto un picnic',
+    'activity_type_ate_restaurant' => 'mangiato al ristorante',
     'activity_type_went_theater' => 'andati a teatro',
     'activity_type_went_concert' => 'andati a un concerto',
     'activity_type_went_play' => 'andati a una rappresentazione teatrale',
     'activity_type_went_museum' => 'andati al museo',
-    'activity_type_ate_restaurant' => 'mangiato al ristorante',
     'activities_add_activity' => 'Aggiungi attività',
     'activities_more_details' => 'Mostra dettagli',
     'activities_hide_details' => 'Nascondi dettagli',
@@ -226,7 +209,7 @@ return [
     'activities_item_information' => ':Activity il :date',
     'activities_add_title' => 'Cosa hai fatto con :name?',
     'activities_summary' => 'Descrivi cosa avete fatto',
-    'activities_add_pick_activity' => '(facoltativo) Vorresti assegnare una categoria a questa attività? Non è obbligatorio, ma più avanti ti permetterà di vedere delle statistiche.',
+    'activities_add_pick_activity' => '(Optional) Would you like to categorize this activity? You don’t have to, but it will give you statistics later on',
     'activities_add_date_occured' => 'Data dell\'attività',
     'activities_add_optional_comment' => 'Commenti aggiuntivi',
     'activities_add_cta' => 'Salva attività',
@@ -237,7 +220,6 @@ return [
     'activities_delete_success' => 'Attività rimossa',
     'activities_who_was_involved' => 'Chi era coinvolto?',
     'activities_activity' => 'Activity Category',
-
     // notes
     'notes_create_success' => 'Nota creata',
     'notes_update_success' => 'Nota aggiornata',
@@ -248,11 +230,13 @@ return [
     'notes_delete_confirmation' => 'Rimuovere nota? Questo cambio è permanente.',
 
     // gifts
+    'gifts_title' => 'Gifts',
     'gifts_add_success' => 'Regalo aggiunto',
     'gifts_delete_success' => 'Regalo rimosso',
     'gifts_delete_confirmation' => 'Rimuovere regalo?',
     'gifts_add_gift' => 'Aggiungi regalo',
     'gifts_link' => 'Link',
+    'gifts_for' => 'For:',
     'gifts_delete_cta' => 'Rimuovi',
     'gifts_add_title' => 'Gestione dei regali a :name',
     'gifts_add_gift_idea' => 'Idea regalo',
@@ -265,9 +249,11 @@ return [
     'gifts_add_someone' => 'Questo regalo è per qualcuno in particolare nella famiglia di :name',
     'gifts_ideas' => 'Gift ideas',
     'gifts_offered' => 'Gifts offered',
+    'gifts_offered_as_an_idea' => 'Mark as an idea',
     'gifts_received' => 'Gifts received',
     'gifts_view_comment' => 'View comment',
     'gifts_mark_offered' => 'Mark as offered',
+    'gifts_update_success' => 'The gift has been updated successfully',
 
     // debts
     'debt_delete_confirmation' => 'Rimuovere questo debito?',
@@ -289,6 +275,7 @@ return [
 
     // tags
     'tag_edit' => 'Modifica etichetta',
+    'tag_add' => 'add a tag',
 
     // Introductions
     'introductions_sidebar_title' => 'Come vi siete conosciuti',
@@ -298,11 +285,11 @@ return [
     'introductions_edit_met_through' => 'Qualcuno ti ha presentato a questa persona?',
     'introductions_no_met_through' => 'Nessuno',
     'introductions_first_met_date' => 'Data in cui vi siete conosciuti',
-    'introductions_no_first_met_date' => 'Non ricordo la data in cui ci siamo conosciuti',
+    'introductions_no_first_met_date' => 'I don’t know the date we met',
     'introductions_first_met_date_known' => 'Questo é il giorno in cui si siamo conosciuti',
     'introductions_add_reminder' => 'Aggiungi un promemoria per celebrare questo incontro nel suo anniversario',
-    'introductions_update_success' => "Hai aggiornato con successo le informazioni sull'incontro con questa persona",
-    'introductions_met_through' => 'Conosciuto/a attraverso <a href="/people/:id">:name</a>',
+    'introductions_update_success' => 'You’ve successfully updated the information about how you met this person',
+    'introductions_met_through' => 'Conosciuto/a attraverso <a href=":url">:name</a>',
     'introductions_met_date' => 'Incontrato/a il :date',
     'introductions_reminder_title' => 'Anniversario del giorno in cui vi siete conosciuti',
 
@@ -313,6 +300,7 @@ return [
     'deceased_add_reminder' => 'Aggiungi un promemoria per questa data',
     'deceased_label' => 'Deceduto/a',
     'deceased_label_with_date' => 'Decesso il :date',
+    'deceased_age' => 'Age at death',
 
     // Contact information
     'contact_info_title' => 'Informazioni di contatto',

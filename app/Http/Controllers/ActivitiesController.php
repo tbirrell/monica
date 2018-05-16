@@ -79,9 +79,9 @@ class ActivitiesController extends Controller
         }
 
         // Log a journal entry
-        $journalEntry = (new JournalEntry)->add($activity);
+        (new JournalEntry)->add($activity);
 
-        return redirect('/people/'.$contact->id)
+        return redirect('/people/'.$contact->hashID())
             ->with('success', trans('people.activities_add_success'));
     }
 
@@ -166,7 +166,7 @@ class ActivitiesController extends Controller
             $newContact->logEvent('activity', $activity->id, 'create');
         }
 
-        return redirect('/people/'.$contact->id)
+        return redirect('/people/'.$contact->hashID())
             ->with('success', trans('people.activities_update_success'));
     }
 
@@ -187,7 +187,7 @@ class ActivitiesController extends Controller
 
         $contact->calculateActivitiesStatistics();
 
-        return redirect('/people/'.$contact->id)
+        return redirect('/people/'.$contact->hashID())
             ->with('success', trans('people.activities_delete_success'));
     }
 }

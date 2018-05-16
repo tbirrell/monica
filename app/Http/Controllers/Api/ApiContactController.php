@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
-use DB;
-use Validator;
 use App\Contact;
 use Illuminate\Http\Request;
+use App\Helpers\SearchHelper;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Http\Resources\Contact\Contact as ContactResource;
+use App\Http\Resources\Contact\ContactWithContactFields as ContactWithContactFieldsResource;
 
 class ApiContactController extends ApiController
 {
@@ -21,10 +24,39 @@ class ApiContactController extends ApiController
      */
     public function index(Request $request)
     {
-        $contacts = auth()->user()->account->contacts()->real()
-                                            ->paginate($this->getLimitPerPage());
+        if ($request->get('query')) {
+            $needle = $request->get('query');
 
-        return ContactResource::collection($contacts);
+            try {
+                $contacts = SearchHelper::searchContacts(
+                    $needle,
+                    $this->getLimitPerPage(),
+                    $this->sort.' '.$this->sortDirection
+                );
+            } catch (QueryException $e) {
+                return $this->respondInvalidQuery();
+            }
+
+            $collection = $this->applyWithParameter($contacts, $this->getWithParameter());
+
+            return $collection->additional([
+                'meta' => [
+                    'query' => $needle,
+                ],
+            ]);
+        }
+
+        try {
+            $contacts = auth()->user()->account->contacts()->real()
+                            ->orderBy($this->sort, $this->sortDirection)
+                            ->paginate($this->getLimitPerPage());
+        } catch (QueryException $e) {
+            return $this->respondInvalidQuery();
+        }
+
+        $collection = $this->applyWithParameter($contacts, $this->getWithParameter());
+
+        return $collection;
     }
 
     /**
@@ -42,6 +74,10 @@ class ApiContactController extends ApiController
             return $this->respondNotFound();
         }
 
+        if ($this->getWithParameter() == 'contactfields') {
+            return new ContactWithContactFieldsResource($contact);
+        }
+
         return new ContactResource($contact);
     }
 
@@ -52,49 +88,9 @@ class ApiContactController extends ApiController
      */
     public function store(Request $request)
     {
-        // Validates basic fields to create the entry
-        $validator = Validator::make($request->all(), [
-            'first_name' => 'required|max:50',
-            'last_name' => 'nullable|max:100',
-            'gender' => 'required',
-            'birthdate' => 'nullable|date',
-            'birthdate_is_age_based' => 'boolean',
-            'birthdate_is_year_unknown' => 'boolean',
-            'birthdate_age' => 'nullable|integer',
-            'job' => 'nullable|max:255',
-            'company' => 'nullable|max:255',
-            'food_preferencies' => 'nullable|max:100000',
-            'linkedin_profile_url' => 'nullable|max:255',
-            'first_met_information' => 'nullable|max:1000000',
-            'first_met_date' => 'nullable|date',
-            'first_met_date_is_age_based' => 'boolean',
-            'first_met_date_is_year_unknown' => 'boolean',
-            'first_met_date_age' => 'nullable|integer',
-            'first_met_through_contact_id' => 'nullable|integer',
-            'is_partial' => 'required|boolean',
-            'is_dead' => 'required|boolean',
-            'deceased_date' => 'nullable|date',
-            'deceased_date_is_age_based' => 'boolean',
-            'deceased_date_is_year_unknown' => 'boolean',
-            'deceased_date_age' => 'nullable|integer',
-            'avatar_url' => 'nullable|max:400',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->setErrorCode(32)
-                        ->respondWithError($validator->errors()->all());
-        }
-
-        // Make sure the `first_met_through_contact_id` is a contact id that the
-        // user is authorized to access
-        if ($request->get('first_met_through_contact_id')) {
-            try {
-                $contactFirstMetThrough = Contact::where('account_id', auth()->user()->account_id)
-                    ->where('id', $request->input('first_met_through_contact_id'))
-                    ->firstOrFail();
-            } catch (ModelNotFoundException $e) {
-                return $this->respondNotFound();
-            }
+        $isvalid = $this->validateUpdate($request);
+        if ($isvalid !== true) {
+            return $isvalid;
         }
 
         // Create the contact
@@ -103,7 +99,7 @@ class ApiContactController extends ApiController
                 $request->only([
                     'first_name',
                     'last_name',
-                    'gender',
+                    'gender_id',
                     'job',
                     'company',
                     'food_preferencies',
@@ -137,16 +133,14 @@ class ApiContactController extends ApiController
             // in this case, we know the month and day, but not necessarily the year
             $date = \Carbon\Carbon::parse($request->get('birthdate'));
 
-            if ($request->get('birthdate_is_year_unknown') == true) {
+            if ($request->get('birthdate_is_year_unknown')) {
                 $specialDate = $contact->setSpecialDate('birthdate', 0, $date->month, $date->day);
             } else {
                 $specialDate = $contact->setSpecialDate('birthdate', $date->year, $date->month, $date->day);
-                $newReminder = $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $contact->first_name]));
+                $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $contact->first_name]));
             }
-        } else {
-            if ($request->get('birthdate_is_age_based') == true) {
-                $specialDate = $contact->setSpecialDateFromAge('birthdate', $request->input('birthdate_age'));
-            }
+        } elseif ($request->get('birthdate_is_age_based')) {
+            $specialDate = $contact->setSpecialDateFromAge('birthdate', $request->input('birthdate_age'));
         }
 
         // first met date
@@ -155,16 +149,14 @@ class ApiContactController extends ApiController
             // in this case, we know the month and day, but not necessarily the year
             $date = \Carbon\Carbon::parse($request->get('first_met_date'));
 
-            if ($request->get('first_met_date_is_year_unknown') == true) {
+            if ($request->get('first_met_date_is_year_unknown')) {
                 $specialDate = $contact->setSpecialDate('first_met', 0, $date->month, $date->day);
             } else {
                 $specialDate = $contact->setSpecialDate('first_met', $date->year, $date->month, $date->day);
-                $newReminder = $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $contact->first_name]));
+                $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $contact->first_name]));
             }
-        } else {
-            if ($request->get('first_met_date_is_age_based') == true) {
-                $specialDate = $contact->setSpecialDateFromAge('first_met', $request->input('first_met_date_age'));
-            }
+        } elseif ($request->get('first_met_date_is_age_based')) {
+            $specialDate = $contact->setSpecialDateFromAge('first_met', $request->input('first_met_date_age'));
         }
 
         // deceased date
@@ -173,16 +165,14 @@ class ApiContactController extends ApiController
             // in this case, we know the month and day, but not necessarily the year
             $date = \Carbon\Carbon::parse($request->get('deceased_date'));
 
-            if ($request->get('deceased_date_is_year_unknown') == true) {
+            if ($request->get('deceased_date_is_year_unknown')) {
                 $specialDate = $contact->setSpecialDate('deceased_date', 0, $date->month, $date->day);
             } else {
                 $specialDate = $contact->setSpecialDate('deceased_date', $date->year, $date->month, $date->day);
-                $newReminder = $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $contact->first_name]));
+                $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $contact->first_name]));
             }
-        } else {
-            if ($request->get('deceased_date_is_age_based') == true) {
-                $specialDate = $contact->setSpecialDateFromAge('deceased_date', $request->input('deceased_date_age'));
-            }
+        } elseif ($request->get('deceased_date_is_age_based')) {
+            $specialDate = $contact->setSpecialDateFromAge('deceased_date', $request->input('deceased_date_age'));
         }
 
         $contact->setAvatarColor();
@@ -206,49 +196,9 @@ class ApiContactController extends ApiController
             return $this->respondNotFound();
         }
 
-        // Validates basic fields to create the entry
-        $validator = Validator::make($request->all(), [
-            'first_name' => 'required|max:50',
-            'last_name' => 'nullable|max:100',
-            'gender' => 'required',
-            'birthdate' => 'nullable|date',
-            'birthdate_is_age_based' => 'nullable|boolean',
-            'birthdate_is_year_unknown' => 'nullable|boolean',
-            'birthdate_age' => 'nullable|integer',
-            'job' => 'nullable|max:255',
-            'company' => 'nullable|max:255',
-            'food_preferencies' => 'nullable|max:100000',
-            'linkedin_profile_url' => 'nullable|max:255',
-            'first_met_information' => 'nullable|max:1000000',
-            'first_met_date' => 'nullable|date',
-            'first_met_date_is_age_based' => 'nullable|boolean',
-            'first_met_date_is_year_unknown' => 'nullable|boolean',
-            'first_met_date_age' => 'nullable|integer',
-            'first_met_through_contact_id' => 'nullable|integer',
-            'is_partial' => 'required|boolean',
-            'is_dead' => 'required|boolean',
-            'deceased_date' => 'nullable|date',
-            'deceased_date_is_age_based' => 'nullable|boolean',
-            'deceased_date_is_year_unknown' => 'nullable|boolean',
-            'deceased_date_age' => 'nullable|integer',
-            'avatar_url' => 'nullable|max:400',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->setErrorCode(32)
-                        ->respondWithError($validator->errors()->all());
-        }
-
-        // Make sure the `first_met_through_contact_id` is a contact id that the
-        // user is authorized to access
-        if ($request->get('first_met_through_contact_id')) {
-            try {
-                $contactFirstMetThrough = Contact::where('account_id', auth()->user()->account_id)
-                    ->where('id', $request->input('first_met_through_contact_id'))
-                    ->firstOrFail();
-            } catch (ModelNotFoundException $e) {
-                return $this->respondNotFound();
-            }
+        $isvalid = $this->validateUpdate($request);
+        if ($isvalid !== true) {
+            return $isvalid;
         }
 
         // Update the contact
@@ -273,16 +223,14 @@ class ApiContactController extends ApiController
             // in this case, we know the month and day, but not necessarily the year
             $date = \Carbon\Carbon::parse($request->get('birthdate'));
 
-            if ($request->get('birthdate_is_year_unknown') == true) {
+            if ($request->get('birthdate_is_year_unknown')) {
                 $specialDate = $contact->setSpecialDate('birthdate', 0, $date->month, $date->day);
             } else {
                 $specialDate = $contact->setSpecialDate('birthdate', $date->year, $date->month, $date->day);
-                $newReminder = $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $contact->first_name]));
+                $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $contact->first_name]));
             }
-        } else {
-            if ($request->get('birthdate_is_age_based') == true) {
-                $specialDate = $contact->setSpecialDateFromAge('birthdate', $request->input('birthdate_age'));
-            }
+        } elseif ($request->get('birthdate_is_age_based')) {
+            $specialDate = $contact->setSpecialDateFromAge('birthdate', $request->input('birthdate_age'));
         }
 
         // first met date
@@ -292,16 +240,14 @@ class ApiContactController extends ApiController
             // in this case, we know the month and day, but not necessarily the year
             $date = \Carbon\Carbon::parse($request->get('first_met_date'));
 
-            if ($request->get('first_met_date_is_year_unknown') == true) {
+            if ($request->get('first_met_date_is_year_unknown')) {
                 $specialDate = $contact->setSpecialDate('first_met', 0, $date->month, $date->day);
             } else {
                 $specialDate = $contact->setSpecialDate('first_met', $date->year, $date->month, $date->day);
-                $newReminder = $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $contact->first_name]));
+                $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $contact->first_name]));
             }
-        } else {
-            if ($request->get('first_met_date_is_age_based') == true) {
-                $specialDate = $contact->setSpecialDateFromAge('first_met', $request->input('first_met_date_age'));
-            }
+        } elseif ($request->get('first_met_date_is_age_based')) {
+            $specialDate = $contact->setSpecialDateFromAge('first_met', $request->input('first_met_date_age'));
         }
 
         // deceased date
@@ -311,21 +257,75 @@ class ApiContactController extends ApiController
             // in this case, we know the month and day, but not necessarily the year
             $date = \Carbon\Carbon::parse($request->get('deceased_date'));
 
-            if ($request->get('deceased_date_is_year_unknown') == true) {
+            if ($request->get('deceased_date_is_year_unknown')) {
                 $specialDate = $contact->setSpecialDate('deceased_date', 0, $date->month, $date->day);
             } else {
                 $specialDate = $contact->setSpecialDate('deceased_date', $date->year, $date->month, $date->day);
-                $newReminder = $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $contact->first_name]));
+                $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $contact->first_name]));
             }
-        } else {
-            if ($request->get('deceased_date_is_age_based') == true) {
-                $specialDate = $contact->setSpecialDateFromAge('deceased_date', $request->input('deceased_date_age'));
-            }
+        } elseif ($request->get('deceased_date_is_age_based')) {
+            $specialDate = $contact->setSpecialDateFromAge('deceased_date', $request->input('deceased_date_age'));
         }
 
         $contact->logEvent('contact', $contact->id, 'update');
 
         return new ContactResource($contact);
+    }
+
+    /**
+     * Validate the request for update.
+     *
+     * @param  Request $request
+     * @return mixed
+     */
+    private function validateUpdate(Request $request)
+    {
+        // Validates basic fields to create the entry
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|max:50',
+            'last_name' => 'nullable|max:100',
+            'gender_id' => 'integer|required',
+            'birthdate' => 'nullable|date',
+            'birthdate_is_age_based' => 'boolean',
+            'birthdate_is_year_unknown' => 'boolean',
+            'birthdate_age' => 'nullable|integer',
+            'job' => 'nullable|max:255',
+            'company' => 'nullable|max:255',
+            'food_preferencies' => 'nullable|max:100000',
+            'linkedin_profile_url' => 'nullable|max:255',
+            'first_met_information' => 'nullable|max:1000000',
+            'first_met_date' => 'nullable|date',
+            'first_met_date_is_age_based' => 'boolean',
+            'first_met_date_is_year_unknown' => 'boolean',
+            'first_met_date_age' => 'nullable|integer',
+            'first_met_through_contact_id' => 'nullable|integer',
+            'is_partial' => 'required|boolean',
+            'is_dead' => 'required|boolean',
+            'deceased_date' => 'nullable|date',
+            'deceased_date_is_age_based' => 'boolean',
+            'deceased_date_is_year_unknown' => 'boolean',
+            'deceased_date_age' => 'nullable|integer',
+            'avatar_url' => 'nullable|max:400',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->setErrorCode(32)
+                        ->respondWithError($validator->errors()->all());
+        }
+
+        // Make sure the `first_met_through_contact_id` is a contact id that the
+        // user is authorized to access
+        if ($request->get('first_met_through_contact_id')) {
+            try {
+                Contact::where('account_id', auth()->user()->account_id)
+                    ->where('id', $request->input('first_met_through_contact_id'))
+                    ->firstOrFail();
+            } catch (ModelNotFoundException $e) {
+                return $this->respondNotFound();
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -357,7 +357,7 @@ class ApiContactController extends ApiController
                 }
             }
 
-            if ($contactIdRowExists == true) {
+            if ($contactIdRowExists) {
                 DB::table($tableName)->where('contact_id', $contact->id)->delete();
             }
         }
@@ -368,188 +368,16 @@ class ApiContactController extends ApiController
     }
 
     /**
-     * Link a partner to an existing contact.
+     * Apply the `?with=` parameter.
+     * @param  Collection $contacts
+     * @return Collection
      */
-    public function partners(Request $request, $contactId)
+    private function applyWithParameter($contacts, string $parameter = null)
     {
-        try {
-            $contact = Contact::where('account_id', auth()->user()->account_id)
-                ->where('id', $contactId)
-                ->firstOrFail();
-        } catch (ModelNotFoundException $e) {
-            return $this->respondNotFound();
+        if ($parameter == 'contactfields') {
+            return ContactWithContactFieldsResource::collection($contacts);
         }
 
-        // Make sure the contact is not a partial contact so we can actually
-        // associate him/her a partner
-        if ($contact->is_partial) {
-            return $this->setErrorCode(36)
-                        ->respondWithError('You can\'t set a partner or a child to a partial contact');
-        }
-
-        // Validates basic fields to create the entry
-        $validator = Validator::make($request->all(), [
-            'partner_id' => 'required|integer',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->setErrorCode(32)
-                        ->respondWithError($validator->errors()->all());
-        }
-
-        try {
-            $partner = Contact::where('account_id', auth()->user()->account_id)
-                ->where('id', $request->input('partner_id'))
-                ->firstOrFail();
-        } catch (ModelNotFoundException $e) {
-            return $this->respondNotFound();
-        }
-
-        if ($partner->is_partial) {
-            $contact->setRelationshipWith($partner);
-        } else {
-            $contact->setRelationshipWith($partner, true);
-            $partner->logEvent('contact', $partner->id, 'create');
-        }
-
-        return new ContactResource($contact);
-    }
-
-    /**
-     * Unlink a partner from an existing contact.
-     */
-    public function unsetPartners(Request $request, $contactId)
-    {
-        try {
-            $contact = Contact::where('account_id', auth()->user()->account_id)
-                ->where('id', $contactId)
-                ->firstOrFail();
-        } catch (ModelNotFoundException $e) {
-            return $this->respondNotFound();
-        }
-
-        // Validates basic fields to create the entry
-        $validator = Validator::make($request->all(), [
-            'partner_id' => 'required|integer',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->setErrorCode(32)
-                        ->respondWithError($validator->errors()->all());
-        }
-
-        try {
-            $partner = Contact::where('account_id', auth()->user()->account_id)
-                ->where('id', $request->input('partner_id'))
-                ->firstOrFail();
-        } catch (ModelNotFoundException $e) {
-            return $this->respondNotFound();
-        }
-
-        if ($partner->is_partial) {
-            if ($partner->reminders) {
-                $partner->reminders()->get()->each->delete();
-            }
-
-            $contact->unsetRelationshipWith($partner);
-            $partner->delete();
-        } else {
-            $contact->unsetRelationshipWith($partner, true);
-        }
-
-        return new ContactResource($contact);
-    }
-
-    /**
-     * Link a child to an existing contact.
-     */
-    public function kids(Request $request, $contactId)
-    {
-        try {
-            $contact = Contact::where('account_id', auth()->user()->account_id)
-                ->where('id', $contactId)
-                ->firstOrFail();
-        } catch (ModelNotFoundException $e) {
-            return $this->respondNotFound();
-        }
-
-        // Make sure the contact is not a partial contact so we can actually
-        // associate him/her a partner
-        if ($contact->is_partial) {
-            return $this->setErrorCode(36)
-                        ->respondWithError('You can\'t set a partner or a child to a partial contact');
-        }
-
-        // Validates basic fields to create the entry
-        $validator = Validator::make($request->all(), [
-            'child_id' => 'required|integer',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->setErrorCode(32)
-                        ->respondWithError($validator->errors()->all());
-        }
-
-        try {
-            $kid = Contact::where('account_id', auth()->user()->account_id)
-                ->where('id', $request->input('child_id'))
-                ->firstOrFail();
-        } catch (ModelNotFoundException $e) {
-            return $this->respondNotFound();
-        }
-
-        if ($kid->is_partial) {
-            $kid->isTheOffspringOf($contact);
-        } else {
-            $kid->isTheOffspringOf($contact, true);
-            $kid->logEvent('contact', $kid->id, 'create');
-        }
-
-        return new ContactResource($contact);
-    }
-
-    /**
-     * Unlink a partner from an existing contact.
-     */
-    public function unsetKids(Request $request, $contactId)
-    {
-        try {
-            $contact = Contact::where('account_id', auth()->user()->account_id)
-                ->where('id', $contactId)
-                ->firstOrFail();
-        } catch (ModelNotFoundException $e) {
-            return $this->respondNotFound();
-        }
-
-        // Validates basic fields to create the entry
-        $validator = Validator::make($request->all(), [
-            'child_id' => 'required|integer',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->setErrorCode(32)
-                        ->respondWithError($validator->errors()->all());
-        }
-
-        try {
-            $kid = Contact::where('account_id', auth()->user()->account_id)
-                ->where('id', $request->input('child_id'))
-                ->firstOrFail();
-        } catch (ModelNotFoundException $e) {
-            return $this->respondNotFound();
-        }
-
-        if ($kid->is_partial) {
-            if ($kid->reminders) {
-                $kid->reminders()->get()->each->delete();
-            }
-
-            $contact->unsetOffspring($kid);
-            $kid->delete();
-        } else {
-            $contact->unsetOffspring($kid, true);
-        }
-
-        return new ContactResource($contact);
+        return ContactResource::collection($contacts);
     }
 }

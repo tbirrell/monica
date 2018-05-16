@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Contacts;
 
-use Auth;
 use App\Contact;
 use App\ContactField;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\People\ContactFieldsRequest;
 
 class ContactFieldsController extends Controller
@@ -57,6 +57,8 @@ class ContactFieldsController extends Controller
             ]
         );
 
+        $contact->updateGravatar();
+
         return $contactField;
     }
 
@@ -75,11 +77,15 @@ class ContactFieldsController extends Controller
             ]
         );
 
+        $contact->updateGravatar();
+
         return $contactField;
     }
 
     public function destroyContactField(Contact $contact, ContactField $contactField)
     {
         $contactField->delete();
+
+        $contact->updateGravatar();
     }
 }

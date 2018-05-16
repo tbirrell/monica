@@ -33,7 +33,7 @@ function Search(form, input, resultsContainer, showResults) {
         data.forEach(function (contact) {
             let person = {};
             person.id = contact.id;
-            person.url = `/people/${contact.id}`;
+            person.url = `/people/${contact.hash}`;
 
             const middleName = contact.middle_name || '';
             const lastName = contact.last_name || '';
@@ -96,7 +96,7 @@ function Search(form, input, resultsContainer, showResults) {
                 showNoResults(data.noResults);
                 return;
             }
-            const results = parseResults(data);
+            const results = parseResults(data.data);
             showResults(results, search);
         });
     }

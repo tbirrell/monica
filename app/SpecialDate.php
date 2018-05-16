@@ -105,6 +105,7 @@ class SpecialDate extends Model
     /**
      * Sets a reminder for this date. If a reminder is already defined for this
      * date, it will delete it first and recreate one.
+     *
      * @param string $frequency The frequency the reminder will be set. Can be 'year', 'month', 'day'.
      * @param int $frequencyNumber
      * @return Reminder
@@ -128,6 +129,8 @@ class SpecialDate extends Model
         $this->reminder_id = $reminder->id;
         $this->save();
 
+        $reminder->scheduleNotifications();
+
         return $reminder;
     }
 
@@ -141,7 +144,21 @@ class SpecialDate extends Model
             return;
         }
 
-        return Reminder::destroy($this->reminder_id);
+        if (! $this->reminder) {
+            return;
+        }
+
+        $reminder = $this->reminder;
+
+        // Unlink the reminder so we can delete it
+        // (otherwise we still depend on it, thus the delete will fail
+        // due to a foreign key constraint)
+        $this->reminder_id = null;
+        $this->save();
+
+        $reminder->purgeNotifications();
+
+        return $reminder->delete();
     }
 
     /**
@@ -155,11 +172,11 @@ class SpecialDate extends Model
             return;
         }
 
-        if ($this->is_year_unknown == true) {
+        if ($this->is_year_unknown) {
             return;
         }
 
-        return $this->date->diffInYears(Carbon::now());
+        return $this->date->diffInYears(now());
     }
 
     /**
@@ -169,7 +186,7 @@ class SpecialDate extends Model
     public function createFromAge(int $age)
     {
         $this->is_age_based = true;
-        $this->date = Carbon::now()->subYears($age)->month(1)->day(1);
+        $this->date = now()->subYears($age)->month(1)->day(1);
         $this->save();
 
         return $this;
@@ -188,7 +205,7 @@ class SpecialDate extends Model
         if ($year != 0) {
             $date = Carbon::createFromDate($year, $month, $day);
         } else {
-            $date = Carbon::createFromDate(Carbon::now()->year, $month, $day);
+            $date = Carbon::createFromDate(now()->year, $month, $day);
             $this->is_year_unknown = true;
         }
 
@@ -207,5 +224,31 @@ class SpecialDate extends Model
         $this->account_id = $contact->account_id;
         $this->contact_id = $contact->id;
         $this->save();
+
+        return $this;
+    }
+
+    /**
+     * Returns the age that a contact died assuming we know when they were born
+     * and died.
+     * @return int
+     */
+    public function getAgeAtDeath()
+    {
+        if (is_null($this->date)) {
+            return;
+        }
+
+        if ($this->is_year_unknown) {
+            return;
+        }
+
+        $contact = $this->contact;
+
+        if (is_null($contact->birthdate)) {
+            return;
+        }
+
+        return $contact->birthdate->date->diffInYears($this->date);
     }
 }

@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Auth;
 use App\Day;
 use App\Entry;
-use Validator;
 use App\JournalEntry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\Journal\DaysRequest;
 
 class JournalController extends Controller
@@ -34,10 +34,11 @@ class JournalController extends Controller
         // this is needed to determine if we need to display the calendar
         // (month + year) next to the journal entry
         $previousEntryMonth = 0;
+        $previousEntryYear = 0;
         $showCalendar = true;
 
         foreach ($journalEntries as $journalEntry) {
-            if ($previousEntryMonth == $journalEntry->date->month) {
+            if ($previousEntryMonth == $journalEntry->date->month && $previousEntryYear == $journalEntry->date->year) {
                 $showCalendar = false;
             }
 
@@ -52,12 +53,13 @@ class JournalController extends Controller
             $entries->push($data);
 
             $previousEntryMonth = $journalEntry->date->month;
+            $previousEntryYear = $journalEntry->date->year;
             $showCalendar = true;
         }
 
         // I need the pagination items when I send back the array.
         // There is probably a simpler way to achieve this.
-        $jsonToSendBack = [
+        return [
             'total' => $journalEntries->total(),
             'per_page' => $journalEntries->perPage(),
             'current_page' => $journalEntries->currentPage(),
@@ -65,8 +67,6 @@ class JournalController extends Controller
             'prev_page_url' => $journalEntries->previousPageUrl(),
             'data' => $entries,
         ];
-
-        return $jsonToSendBack;
     }
 
     /**
@@ -76,9 +76,7 @@ class JournalController extends Controller
      */
     public function get(JournalEntry $journalEntry)
     {
-        $object = $journalEntry->getObjectData();
-
-        return $object;
+        return $journalEntry->getObjectData();
     }
 
     /**
@@ -87,14 +85,14 @@ class JournalController extends Controller
     public function storeDay(DaysRequest $request)
     {
         $day = auth()->user()->account->days()->create([
-            'date' => \Carbon\Carbon::now(auth()->user()->timezone),
+            'date' => now(auth()->user()->timezone),
             'rate' => $request->get('rate'),
         ]);
 
         // Log a journal entry
         $journalEntry = (new JournalEntry)->add($day);
 
-        $data = [
+        return [
             'id' => $journalEntry->id,
             'date' => $journalEntry->date,
             'journalable_id' => $journalEntry->journalable_id,
@@ -102,8 +100,6 @@ class JournalController extends Controller
             'object' => $journalEntry->getObjectData(),
             'show_calendar' => true,
         ];
-
-        return $data;
     }
 
     /**
@@ -144,12 +140,13 @@ class JournalController extends Controller
      * Saves the journal entry.
      *
      * @param  Request $request
-     * @return Response
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function save(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'entry' => 'required',
+            'date' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -168,8 +165,9 @@ class JournalController extends Controller
 
         $entry->save();
 
+        $entry->date = $request->input('date');
         // Log a journal entry
-        $journalEntry = (new JournalEntry)->add($entry);
+        (new JournalEntry)->add($entry);
 
         return redirect()->route('journal.index');
     }
