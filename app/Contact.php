@@ -400,7 +400,7 @@ class Contact extends Model
      */
     public function getInitialsAttribute()
     {
-        preg_match_all('/(?<=\s|^)[a-zA-Z0-9]/i', $this->getCompleteName(), $initials);
+        preg_match_all('/(?<=\s|^)[a-zA-Z0-9]/i', $this->getCompleteName('firstname_first', false), $initials);
 
         return implode('', $initials[0]);
     }
@@ -430,17 +430,17 @@ class Contact extends Model
      *
      * @return string
      */
-    public function getCompleteName($nameOrder = 'firstname_first')
+    public function getCompleteName($nameOrder = 'firstname_first', $show_middle = true)
     {
         $completeName = '';
 
         if ($nameOrder == 'firstname_first') {
             $completeName = $this->first_name;
-
-            if (! is_null($this->middle_name)) {
+    
+            if ($show_middle && !is_null($this->middle_name)) {
                 $completeName = $completeName.' '.$this->middle_name;
             }
-
+            
             if (! is_null($this->last_name)) {
                 $completeName = $completeName.' '.$this->last_name;
             }
@@ -448,11 +448,11 @@ class Contact extends Model
             if (! is_null($this->last_name)) {
                 $completeName = $this->last_name;
             }
-
+            
             if (! is_null($this->middle_name)) {
                 $completeName = $completeName.' '.$this->middle_name;
             }
-
+            
             $completeName = $completeName.' '.$this->first_name;
         }
 
@@ -1407,5 +1407,10 @@ class Contact extends Model
     public function is_group()
     {
         return ($this->is_group_proxy === 1);
+    }
+    
+    public function getAltLastName()
+    {
+        return $this->surname ?: false;
     }
 }
