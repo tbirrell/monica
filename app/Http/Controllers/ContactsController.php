@@ -78,9 +78,6 @@ class ContactsController extends Controller
             $contacts = $user->account->contacts()->real()->sortedBy($sort)->where('is_group_proxy',0)->get();
             
             $contacts = $contacts->tags($tags)->get();
-        } else {
-            // get all contacts
-            $contacts = $user->account->contacts()->real()->sortedBy($sort)->get();
         }
 
         return view('people.index')
