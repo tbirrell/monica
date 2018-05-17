@@ -90,7 +90,11 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::put('/people/{contact}/notes/{note}', 'Contacts\\NotesController@update');
         Route::delete('/people/{contact}/notes/{note}', 'Contacts\\NotesController@destroy');
         Route::post('/people/{contact}/notes/{note}/toggle', 'Contacts\\NotesController@toggle');
-
+        
+        // Mindmap
+        Route::get('/people/{contact}/mindmap', 'Contacts\\MindmapController@get');
+        Route::post('/people/{contact}/mindmap', 'Contacts\\MindmapController@save');
+        
         // Food preferencies
         Route::get('/people/{contact}/food', 'ContactsController@editFoodPreferencies')->name('.food');
         Route::post('/people/{contact}/food/save', 'ContactsController@updateFoodPreferencies')->name('.food.update');
