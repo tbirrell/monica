@@ -62,22 +62,12 @@ class ContactsController extends Controller
             }
 
             $contacts = $user->account->contacts()->real()->sortedBy($sort);
+
+            $contacts = $contacts->tags($tags)->where('is_group_proxy',0)->get();
             
-            foreach ($tags as $tag) {
-                $contacts = $contacts->whereHas('tags', function ($query) use ($tag) {
-                    $query->where('id', $tag->id);
-                });
-
-                $url = $url.'tag'.$tagCount.'='.$tag->name_slug.'&';
-
-                $tagCount++;
-            }
-
-            $contacts = $contacts->where('is_group_proxy',0)->get();
         } else {
             $contacts = $user->account->contacts()->real()->sortedBy($sort)->where('is_group_proxy',0)->get();
             
-            $contacts = $contacts->tags($tags)->get();
         }
 
         return view('people.index')
