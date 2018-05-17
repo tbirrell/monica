@@ -26,9 +26,9 @@
           @endif
 
           <h3 class="{{ \App\Helpers\LocaleHelper::getDirection() }}">
-            {{ $contact->getCompleteName(auth()->user()->name_order) }}
+            {{ $contact->getCompleteName(auth()->user()->name_order, true) }}
             @if($maidenName = $contact->getAltLastName())
-              <span id="maidenName">(née {{$maidenName}})</span>
+              <span class="f6" id="maidenName">(née {{$maidenName}})</span>
             @endif
             @if ($contact->birthday_special_date_id && !($contact->is_dead))
               @if ($contact->birthdate->getAge())

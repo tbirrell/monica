@@ -454,14 +454,14 @@ class Contact extends Model
      *
      * @return string
      */
-    public function getCompleteName($nameOrder = 'firstname_first')
+    public function getCompleteName($nameOrder = 'firstname_first', $middleName = false)
     {
         $completeName = '';
         
         if ($nameOrder == 'firstname_first') {
             $completeName = $this->first_name;
             
-            if (! is_null($this->middle_name)) {
+            if (! is_null($this->middle_name) && $middleName) {
                 $completeName = $completeName.' '.$this->middle_name;
             }
             
