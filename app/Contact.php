@@ -185,7 +185,14 @@ class Contact extends Model
     {
         return $this->hasMany('App\Note');
     }
-    
+    /**
+     * Get the mind map associated with the contact.
+     *
+     * @return HasOne
+     */
+    public function mindmap() {
+        return $this->hasOne('App\Mindmap');
+    }
     /**
      * Get the reminder records associated with the contact.
      *
