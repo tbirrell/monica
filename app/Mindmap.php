@@ -17,6 +17,7 @@ class Mindmap extends Model
      * @var array
      */
     protected $guarded = ['id'];
+    protected $table = 'mindmap';
     
     public function contact() {
         return $this->hasOne('App\Contact');

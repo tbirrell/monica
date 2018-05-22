@@ -1,3 +1,7 @@
+<?php
+        dump($contact);
+        dump($contact->mindmap()->value('map'));
+?>
 <!DOCTYPE html>
 <html>
 
@@ -14,7 +18,7 @@
 
 
     <meta charset="utf-8">
-    <title>Text2MindMap</title>
+    <title>{{$contact->first_name}} {{$contact->last_name}}</title>
     <link rel="shortcut icon" type="image/png" href="favicon.png">
 
     <link rel="stylesheet" href="/mindmap/styles/old/customstyles.css">
@@ -69,8 +73,8 @@
         <ul>
             <li class="navbar-item">
                 <div class="document-title-container">
-                    <input class="document-title-input">
-                    <div class="document-title-mirror"></div>
+                    <input class="document-title-input" value="{{$contact->first_name}} {{$contact->last_name}}">
+                    {{--<div class="document-title-mirror"></div>--}}
                 </div>
             </li>
             <li class="navbar-item navbar-button navbar-dropdown">
@@ -102,7 +106,7 @@
                         <i class="fa fa-fw fa-chevron-left"></i>
                     </div>
                 </div>
-                <textarea id="textArea" wrap="off" exp></textarea>
+                <textarea id="textArea" wrap="off" exp>{{$contact->mindmap()->value('map')}}</textarea>
             </div>
         </div>
         <div id="viewer-pane">
