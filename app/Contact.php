@@ -37,7 +37,7 @@ class Contact extends Model
     // The list of columns we want the Searchable trait to use.
     protected $searchable_columns = [
     'first_name',
-    'middle_name',
+//    'middle_name',
     'last_name',
     ];
     
@@ -45,7 +45,7 @@ class Contact extends Model
     protected $return_from_search = [
     'id',
     'first_name',
-    'middle_name',
+//    'middle_name',
     'last_name',
     'has_avatar',
     'avatar_file_name',
@@ -480,7 +480,7 @@ class Contact extends Model
                 $completeName = $this->last_name;
             }
             
-            if (! is_null($this->middle_name)) {
+            if (! is_null($this->middle_name) && $middleName) {
                 $completeName = $completeName.' '.$this->middle_name;
             }
             
