@@ -1,6 +1,6 @@
 <?php
 
-use App\Account;
+use App\Models\Account\Account;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Migrations\Migration;
 
@@ -29,7 +29,7 @@ class AddExWifeHusbandRelationship extends Migration
         Account::chunk(200, function ($accounts) {
             foreach ($accounts as $account) {
                 /* @var Account $account */
-                $account->populateRelationshipTypesTable();
+                $account->populateRelationshipTypesTable(true);
             }
         });
 

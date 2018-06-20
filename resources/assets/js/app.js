@@ -24,7 +24,9 @@ Vue.use(Notifications);
 // Tooltip
 import Tooltip from 'vue-directive-tooltip';
 import 'vue-directive-tooltip/css/index.css';
-Vue.use(Tooltip);
+Vue.use(Tooltip, {
+    delay: 0,
+});
 
 // Toggle Buttons
 import ToggleButton from 'vue-js-toggle-button';
@@ -174,6 +176,14 @@ import axios from 'axios';
 import VueI18n from 'vue-i18n';
 Vue.use(VueI18n);
 
+// Moments
+import moment from 'moment';
+Vue.filter('formatDate', function(value) {
+    if (value) {
+        return moment(String(value)).format('LL')
+    }
+});
+
 import messages from '../../../public/js/langs/en.json';
 
 export const i18n = new VueI18n({
@@ -207,6 +217,7 @@ export function loadLanguageAsync (lang, set) {
 const app = null;
 const me = this;
 loadLanguageAsync(window.Laravel.locale, true).then((lang) => {
+    moment.locale(lang);
 
     // the Vue appplication
     me.app = new Vue({
