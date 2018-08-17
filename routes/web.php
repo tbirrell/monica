@@ -1,5 +1,7 @@
 <?php
 
+use App\Mail\NotificationEmail;
+use App\Models\Contact\Notification;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +23,10 @@ if (App::environment('production')) {
 }
 
 Route::get('/', 'Auth\LoginController@showLoginOrRegister')->name('login');
-
+Route::get('xyz', function (){
+    echo 'test';
+    dump(Mail::to('test@xristos.net')->send(new NotificationEmail(new Notification, app()->user)));
+});
 Auth::routes();
 
 Route::get('/password/reset', 'Auth\ForgotPasswordController@showLinkRequestForm');
@@ -34,14 +39,20 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', '2fa'])->group(function () {
+    Route::post('/validate2fa', 'Auth\Validate2faController@index');
+});
+
+Route::middleware(['auth', 'auth.confirm', '2fa'])->group(function () {
     Route::group(['as' => 'dashboard'], function () {
         Route::get('/dashboard', 'DashboardController@index')->name('.index');
         Route::get('/dashboard/calls', 'DashboardController@calls');
         Route::get('/dashboard/notes', 'DashboardController@notes');
+        Route::get('/dashboard/debts', 'DashboardController@debts');
         Route::post('/dashboard/setTab', 'DashboardController@setTab');
     });
-    Route::post('/validate2fa', 'DashboardController@index');
 
+    Route::get('/compliance', 'ComplianceController@index')->name('compliance');
+    Route::post('/compliance/sign', 'ComplianceController@store');
     Route::get('/changelog', 'ChangelogController@index');
 
     Route::group(['as' => 'people'], function () {
