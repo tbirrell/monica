@@ -1641,9 +1641,4 @@ class Contact extends Model
     {
         return ($this->is_group_proxy === 1);
     }
-    
-    public function getMaidenNameAttribute()
-    {
-        return $this->maiden_name ?: false;
-    }
 }
