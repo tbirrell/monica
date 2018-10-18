@@ -6,7 +6,7 @@
  */
 
 require('./bootstrap');
-require('jQuery-Tags-Input/dist/jquery.tagsinput.min');
+require('jquery-tags-input/dist/jquery.tagsinput.min');
 
 /**
  * Next, we will create a fresh Vue application instance and attach it to
@@ -24,7 +24,26 @@ Vue.use(Notifications);
 // Tooltip
 import Tooltip from 'vue-directive-tooltip';
 import 'vue-directive-tooltip/css/index.css';
-Vue.use(Tooltip);
+Vue.use(Tooltip, {
+    delay: 0,
+});
+
+// Toggle Buttons
+import ToggleButton from 'vue-js-toggle-button';
+Vue.use(ToggleButton);
+
+// Radio buttons
+import PrettyCheckbox from 'pretty-checkbox-vue';
+Vue.use(PrettyCheckbox);
+
+// Select used on list items to display edit and delete buttons
+import vSelectMenu from 'v-selectmenu';
+Vue.use(vSelectMenu);
+
+// Tables
+import VueGoodTablePlugin from 'vue-good-table';
+import 'vue-good-table/dist/vue-good-table.css'
+Vue.use(VueGoodTablePlugin);
 
 // Custom components
 Vue.component(
@@ -42,10 +61,42 @@ Vue.component(
     require('./components/passport/PersonalAccessTokens.vue')
 );
 
+// Vue select
+Vue.component(
+    'contact-select',
+    require('./components/people/ContactSelect.vue')
+);
+
 // Partials
 Vue.component(
     'avatar',
     require('./components/partials/Avatar.vue')
+);
+
+// Form elements
+Vue.component(
+    'form-input',
+    require('./components/partials/form/Input.vue')
+);
+Vue.component(
+    'form-select',
+    require('./components/partials/form/Select.vue')
+);
+Vue.component(
+    'form-specialdate',
+    require('./components/partials/form/SpecialDate.vue')
+);
+Vue.component(
+    'form-date',
+    require('./components/partials/form/Date.vue')
+);
+Vue.component(
+    'form-radio',
+    require('./components/partials/form/Radio.vue')
+);
+Vue.component(
+    'form-textarea',
+    require('./components/partials/form/Textarea.vue')
 );
 
 // Dashboard
@@ -55,6 +106,11 @@ Vue.component(
 );
 
 // Contacts
+Vue.component(
+    'contact-favorite',
+    require('./components/people/SetFavorite.vue')
+);
+
 Vue.component(
     'contact-address',
     require('./components/people/Addresses.vue')
@@ -83,6 +139,41 @@ Vue.component(
 Vue.component(
     'pet',
     require('./components/people/Pets.vue')
+);
+
+Vue.component(
+    'stay-in-touch',
+    require('./components/people/StayInTouch.vue')
+);
+
+Vue.component(
+    'conversation-list',
+    require('./components/people/conversation/ConversationList.vue')
+);
+
+Vue.component(
+    'conversation',
+    require('./components/people/conversation/Conversation.vue')
+);
+
+Vue.component(
+    'message',
+    require('./components/people/conversation/Message.vue')
+);
+
+Vue.component(
+    'create-life-event',
+    require('./components/people/lifeevent/CreateLifeEvent.vue')
+);
+
+Vue.component(
+    'create-default-life-event',
+    require('./components/people/lifeevent/content/CreateDefaultLifeEvent.vue')
+);
+
+Vue.component(
+    'life-event-list',
+    require('./components/people/lifeevent/LifeEventList.vue')
 );
 
 // Journal
@@ -116,30 +207,119 @@ Vue.component(
     'contact-field-types',
     require('./components/settings/ContactFieldTypes.vue')
 );
+Vue.component(
+    'genders',
+    require('./components/settings/Genders.vue')
+);
+Vue.component(
+    'reminder-rules',
+    require('./components/settings/ReminderRules.vue')
+);
+Vue.component(
+    'reminder-time',
+    require('./components/settings/ReminderTime.vue')
+);
+Vue.component(
+    'mfa-activate',
+    require('./components/settings/MfaActivate.vue')
+);
+Vue.component(
+    'u2f-connector',
+    require('./components/settings/U2fConnector.vue')
+);
 
+Vue.component(
+    'modules',
+    require('./components/settings/Modules.vue')
+);
 
-// This let us access the `trans` method for localization in Vue templates
-// ({{ trans('app.save') }})
-Vue.prototype.trans = (key) => {
-    return _.get(window.trans, key, key);
-};
+Vue.component(
+    'activity-types',
+    require('./components/settings/ActivityTypes.vue')
+);
 
-const app = new Vue({
-    el: '#app',
+// axios
+import axios from 'axios';
 
-    data: {
-      activities_description_show: false,
-      reminders_frequency: 'once',
-      accept_invite_user: false,
-      date_met_the_contact: 'known'
-    },
-    methods: {
-    },
+// i18n
+import VueI18n from 'vue-i18n';
+Vue.use(VueI18n);
+
+// Moments
+import moment from 'moment';
+Vue.filter('formatDate', function(value) {
+    if (value) {
+        return moment(String(value)).format('LL')
+    }
 });
-require('./tags');
-require('./search');
-require('./contacts');
+
+import messages from '../../../public/js/langs/en.json';
+
+export const i18n = new VueI18n({
+    locale: 'en', // set locale
+    fallbackLocale: 'en',
+    messages: {'en': messages}
+});
+
+const loadedLanguages = ['en']; // our default language that is prelaoded
+
+function setI18nLanguage (lang) {
+    i18n.locale = lang;
+    axios.defaults.headers.common['Accept-Language'] = lang;
+    document.querySelector('html').setAttribute('lang', lang);
+    return lang;
+}
+
+export function loadLanguageAsync (lang, set) {
+    if (i18n.locale !== lang) {
+      if (!loadedLanguages.includes(lang)) {
+        return axios.get(`/js/langs/${lang}.json`).then(msgs => {
+          i18n.setLocaleMessage(lang, msgs.data);
+          loadedLanguages.push(lang);
+          return set ? setI18nLanguage(lang) : lang;
+        });
+      }
+    }
+    return Promise.resolve(set ? setI18nLanguage(lang) : lang);
+}
+
+const app = null;
+const me = this;
+loadLanguageAsync(window.Laravel.locale, true).then((lang) => {
+    moment.locale(lang);
+
+    // the Vue appplication
+    me.app = new Vue({
+      i18n,
+      data: {
+        reminders_frequency: 'once',
+        accept_invite_user: false,
+        date_met_the_contact: 'known',
+        global_relationship_form_new_contact: true,
+        htmldir: window.Laravel.htmldir,
+        global_profile_default_view: window.Laravel.profileDefaultView
+      },
+      methods: {
+        updateDefaultProfileView(view) {
+            axios.post('/settings/updateDefaultProfileView', { 'name': view })
+                        .then(response => {
+                            this.global_profile_default_view = view
+                      });
+        }
+      },
+      mounted: function() {
+
+        // required modules
+        require('./tags');
+        require('./search');
+        require('./contacts');
+
+      }
+    }).$mount('#app');
+
+    return app;
+});
 
 // jQuery-Tags-Input for the tags on the contact
 $(document).ready(function() {
-} );
+});

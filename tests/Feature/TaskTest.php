@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Contact;
 use Tests\FeatureTestCase;
-use Faker\Factory as Faker;
+use App\Models\Contact\Contact;
+use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class TaskTest extends FeatureTestCase
 {
-    use DatabaseTransactions;
+    use DatabaseTransactions, WithFaker;
 
     /**
      * Returns an array containing a user object along with
@@ -31,9 +31,8 @@ class TaskTest extends FeatureTestCase
     {
         list($user, $contact) = $this->fetchUser();
 
-        $faker = Faker::create();
-        $taskTitle = $faker->realText();
-        $taskDescription = $faker->realText();
+        $taskTitle = $this->faker->realText();
+        $taskDescription = $this->faker->realText();
 
         $params = [
             'title' => $taskTitle,
@@ -41,7 +40,7 @@ class TaskTest extends FeatureTestCase
             'completed' => 0,
         ];
 
-        $response = $this->post('/people/'.$contact->id.'/tasks', $params);
+        $response = $this->post('/people/'.$contact->hashID().'/tasks', $params);
 
         // Assert the note has been added for the correct user.
         $params['account_id'] = $user->account_id;
@@ -50,12 +49,5 @@ class TaskTest extends FeatureTestCase
         $params['description'] = $taskDescription;
 
         $this->assertDatabaseHas('tasks', $params);
-
-        // Make sure an event has been created for this action
-        $eventParams['account_id'] = $user->account_id;
-        $eventParams['contact_id'] = $contact->id;
-        $eventParams['object_type'] = 'task';
-        $eventParams['nature_of_operation'] = 'create';
-        $this->assertDatabaseHas('events', $eventParams);
     }
 }

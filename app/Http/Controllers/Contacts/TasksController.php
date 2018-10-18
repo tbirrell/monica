@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Contacts;
 
-use App\Task;
-use App\Contact;
+use App\Helpers\DateHelper;
+use App\Models\Contact\Task;
+use App\Models\Contact\Contact;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\People\TasksRequest;
 use App\Http\Requests\People\TaskToggleRequest;
@@ -23,7 +24,7 @@ class TasksController extends Controller
                 'title' => $task->title,
                 'description' => $task->description,
                 'completed' => $task->completed,
-                'completed_at' => \App\Helpers\DateHelper::getShortDate($task->completed_at),
+                'completed_at' => DateHelper::getShortDate($task->completed_at),
                 'edit' => false,
             ];
             $tasks->push($data);
@@ -37,15 +38,11 @@ class TasksController extends Controller
      */
     public function store(TasksRequest $request, Contact $contact)
     {
-        $task = $contact->tasks()->create([
-            'account_id' => auth()->user()->account->id,
+        return $contact->tasks()->create([
+            'account_id' => auth()->user()->account_id,
             'title' => $request->get('title'),
             'description' => ($request->get('description') == '' ? null : $request->get('description')),
         ]);
-
-        $contact->logEvent('task', $task->id, 'create');
-
-        return $task;
     }
 
     /**
@@ -59,8 +56,6 @@ class TasksController extends Controller
             'completed' => $request->get('completed'),
         ]);
 
-        $contact->logEvent('task', $task->id, 'update');
-
         return $task;
     }
 
@@ -72,10 +67,8 @@ class TasksController extends Controller
             $task->completed = false;
         } else {
             $task->completed = true;
-            $task->completed_at = \Carbon\Carbon::now();
+            $task->completed_at = now();
         }
-
-        $contact->logEvent('task', $task->id, 'update');
 
         $task->save();
     }

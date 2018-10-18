@@ -1,9 +1,9 @@
 @extends('layouts.skeleton')
 
-@section('title', $contact->getCompleteName(auth()->user()->name_order) )
+@section('title', $contact->name )
 
 @section('content')
-  <div class="people-show" data-contact-id="{{ $contact->id }}">
+  <div class="people-show" >
     {{ csrf_field() }}
 
     {{-- Breadcrumb --}}
@@ -13,13 +13,13 @@
           <div class="col-xs-12">
             <ul class="horizontal">
               <li>
-                <a href="/dashboard">{{ trans('app.breadcrumb_dashboard') }}</a>
+                <a href="{{ route('dashboard.index') }}">{{ trans('app.breadcrumb_dashboard') }}</a>
               </li>
               <li>
-                <a href="/people">{{ trans('app.breadcrumb_list_contacts') }}</a>
+                <a href="{{ route('people.index') }}">{{ trans('app.breadcrumb_list_contacts') }}</a>
               </li>
               <li>
-                {{ $contact->getCompleteName(auth()->user()->name_order) }}
+                {{ $contact->name }}
               </li>
             </ul>
           </div>
@@ -37,40 +37,92 @@
 
         <div class="row">
           <div class="col-xs-12 col-sm-3 profile-sidebar">
-            @include('people.dashboard.index')
 
-            <a href="{{ url('/people/'.$contact->id.'/vcard') }}">Export as vCard</a>
+            @include('people.relationship.index')
+
+            @include('people.sidebar')
+
+            <p><a href="{{ route('people.vcard', $contact) }}">{{ trans('people.people_export') }}</a></p>
+            <p>
+              {{ trans('people.people_delete_message') }}
+              <a href="#" id="link-delete-contact" onclick="if (confirm('{{ trans('people.people_delete_confirmation') }}')) { $('#contact-delete-form').submit(); } return false;">{{ trans('people.people_delete_click_here') }}</a>.
+              <form method="POST" action="{{ route('people.delete', $contact) }}" id="contact-delete-form" class="hidden">
+                {{ method_field('DELETE') }}
+                {{ csrf_field() }}
+              </form>
+            </p>
           </div>
 
           <div class="col-xs-12 col-sm-9">
-            <div class="row section notes">
-              <div class="col-xs-12 section-title">
-                <contact-note v-bind:contact-id="{!! $contact->id !!}"></contact-note>
+
+            <div class="flex items-center justify-center flex-column">
+              <div class='cf dib'>
+                <span @click="updateDefaultProfileView('life-events')" :class="[global_profile_default_view == 'life-events' ? 'f6 fl bb bt bl ph3 pv2 dib b br2 br--left bl mb4 b--gray-monica' : 'f6 fl bb bt ph3 pv2 dib bg-gray-monica br2 br--left bl pointer mb4 b--gray-monica']">
+                  @if (auth()->user()->profile_new_life_event_badge_seen == false)
+                  <span class="bg-light-green f7 mr2 ph2 pv1 br2">{{ trans('app.new') }}</span>
+                  @endif
+                  {{ trans('people.life_event_list_tab_life_events') }}
+                </span>
+                <span @click="updateDefaultProfileView('notes')" :class="[global_profile_default_view != 'life-events' ? 'f6 fl bb bt bl ph3 pv2 dib b br2 br--right br mb4 b--gray-monica' : 'f6 fl bb bt ph3 pv2 dib bg-gray-monica br2 br--right br pointer mb4 b--gray-monica']">{{ trans('people.life_event_list_tab_other') }}</span>
               </div>
             </div>
 
-            <div class="row section calls">
-              @include('people.calls.index')
+            <div v-if="global_profile_default_view == 'life-events'">
+              <div class="row section">
+                @include('people.life-events.index')
+              </div>
             </div>
 
-            <div class="row section activities">
-              @include('activities.index')
-            </div>
+            <div v-if="global_profile_default_view != 'life-events'">
+              @if ($modules->contains('key', 'notes'))
+              <div class="row section notes">
+                <div class="col-xs-12 section-title">
+                  <contact-note hash={{ $contact->hashID() }}></contact-note>
+                </div>
+              </div>
+              @endif
 
-            <div class="row section reminders">
-              @include('people.reminders.index')
-            </div>
+              @if ($modules->contains('key', 'conversations'))
+              <div class="row section">
+                @include('people.conversations.index')
+              </div>
+              @endif
 
-            <div class="row section">
-              @include('people.tasks.index')
-            </div>
+              @if ($modules->contains('key', 'phone_calls'))
+              <div class="row section calls">
+                @include('people.calls.index')
+              </div>
+              @endif
 
-            <div class="row section">
-              @include('people.gifts.index')
-            </div>
+              @if ($modules->contains('key', 'activities'))
+              <div class="row section activities">
+                @include('activities.index')
+              </div>
+              @endif
 
-            <div class="row section debts">
-              @include('people.debt.index')
+              @if ($modules->contains('key', 'reminders'))
+              <div class="row section reminders">
+                @include('people.reminders.index')
+              </div>
+              @endif
+
+              @if ($modules->contains('key', 'tasks'))
+              <div class="row section">
+                @include('people.tasks.index')
+              </div>
+              @endif
+
+              @if ($modules->contains('key', 'gifts'))
+              <div class="row section">
+                @include('people.gifts.index')
+              </div>
+              @endif
+
+              @if ($modules->contains('key', 'debts'))
+              <div class="row section debts">
+                @include('people.debt.index')
+              </div>
+              @endif
             </div>
           </div>
         </div>

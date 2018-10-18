@@ -1,18 +1,27 @@
 <?php
 
-use App\Account;
-use App\Contact;
+use Carbon\Carbon;
 use GuzzleHttp\Client;
-use Faker\Factory as Faker;
+use App\Models\Account\Account;
+use App\Models\Contact\Contact;
 use Illuminate\Database\Seeder;
+use App\Helpers\CountriesHelper;
+use Illuminate\Support\Facades\DB;
+use App\Models\Contact\LifeEventType;
+use App\Models\Contact\ContactFieldType;
+use Illuminate\Foundation\Testing\WithFaker;
 use Symfony\Component\Console\Helper\ProgressBar;
+use App\Services\Contact\LifeEvent\CreateLifeEvent;
 use Symfony\Component\Console\Output\ConsoleOutput;
+use App\Services\Contact\Conversation\CreateConversation;
+use App\Services\Contact\Conversation\AddMessageToConversation;
 
 class FakeContentTableSeeder extends Seeder
 {
+    use WithFaker;
+
     private $numberOfContacts;
     private $contact;
-    private $faker;
     private $account;
 
     /**
@@ -22,27 +31,12 @@ class FakeContentTableSeeder extends Seeder
      */
     public function run()
     {
-        // populate account table
-        $accountID = DB::table('accounts')->insertGetId([
-            'api_key' => str_random(30),
-        ]);
+        $this->setUpFaker();
+        $this->account = Account::createDefault('John', 'Doe', 'admin@admin.com', 'admin');
 
-        $account = Account::find($accountID);
-        $account->populateContactFieldTypeTable();
-
-        // populate user table
-        $userId = DB::table('users')->insertGetId([
-            'account_id' => $accountID,
-            'first_name' => 'John',
-            'last_name' => 'Doe',
-            'email' => 'admin@admin.com',
-            'password' => bcrypt('admin'),
-            'timezone' => config('app.timezone'),
-        ]);
-
-        $this->account = $account;
-
-        $this->faker = Faker::create();
+        // set default admin account to confirmed
+        $adminUser = $this->account->users()->first();
+        $this->confirmUser($adminUser);
 
         // create a random number of contacts
         $this->numberOfContacts = rand(60, 100);
@@ -58,15 +52,17 @@ class FakeContentTableSeeder extends Seeder
         $arrayPictures = json_decode($res->getBody());
 
         for ($i = 0; $i < $this->numberOfContacts; $i++) {
-            $timezone = config('app.timezone');
             $gender = (rand(1, 2) == 1) ? 'male' : 'female';
 
             $this->contact = new Contact;
-            $this->contact->account_id = $accountID;
-            $this->contact->gender = $gender;
+            $this->contact->account_id = $this->account->id;
+            $this->contact->gender_id = $this->getRandomGender()->id;
             $this->contact->first_name = $this->faker->firstName($gender);
             $this->contact->last_name = (rand(1, 2) == 1) ? $this->faker->lastName : null;
+            $this->contact->nickname = (rand(1, 2) == 1) ? $this->faker->name : null;
+            $this->contact->is_starred = (rand(1, 5) == 1);
             $this->contact->has_avatar = false;
+            $this->contact->setAvatarColor();
             $this->contact->save();
 
             // set an external avatar
@@ -77,19 +73,18 @@ class FakeContentTableSeeder extends Seeder
                 $this->contact->save();
             }
 
-            $this->contact->setAvatarColor();
-
-            $this->populateFoodPreferencies();
+            $this->populateFoodPreferences();
             $this->populateDeceasedDate();
             $this->populateBirthday();
             $this->populateFirstMetInformation();
-            $this->populateKids();
-            $this->populatePartners();
+            $this->populateRelationships();
             $this->populateNotes();
             $this->populateActivities();
             $this->populateTasks();
             $this->populateDebts();
             $this->populateCalls();
+            $this->populateConversations();
+            $this->populateLifeEvents();
             $this->populateGifts();
             $this->populateAddresses();
             $this->populateContactFields();
@@ -105,23 +100,12 @@ class FakeContentTableSeeder extends Seeder
         $progress->finish();
 
         // create the second test, blank account
-        $accountID = DB::table('accounts')->insertGetId([
-            'api_key' => str_random(30),
-        ]);
-
-        // populate user table
-        $userId = DB::table('users')->insertGetId([
-            'account_id' => $accountID,
-            'first_name' => 'Blank',
-            'last_name' => 'State',
-            'email' => 'blank@blank.com',
-            'password' => bcrypt('blank'),
-            'timezone' => config('app.timezone'),
-            'remember_token' => str_random(10),
-        ]);
+        $blankAccount = Account::createDefault('Blank', 'State', 'blank@blank.com', 'blank');
+        $blankUser = $blankAccount->users()->first();
+        $this->confirmUser($blankUser);
     }
 
-    public function populateFoodPreferencies()
+    public function populateFoodPreferences()
     {
         // add food preferencies
         if (rand(1, 2) == 1) {
@@ -146,7 +130,7 @@ class FakeContentTableSeeder extends Seeder
                     // add a date where we know the year
                     $specialDate = $this->contact->setSpecialDate('deceased_date', $deceasedDate->format('Y'), $deceasedDate->format('m'), $deceasedDate->format('d'));
                 }
-                $newReminder = $specialDate->setReminder('year', 1, trans('people.deceased_reminder_title', ['name' => $this->contact->first_name]));
+                $specialDate->setReminder('year', 1, trans('people.deceased_reminder_title', ['name' => $this->contact->first_name]));
             }
 
             $this->contact->save();
@@ -167,7 +151,7 @@ class FakeContentTableSeeder extends Seeder
                     $specialDate = $this->contact->setSpecialDate('birthdate', $birthdate->format('Y'), $birthdate->format('m'), $birthdate->format('d'));
                 }
 
-                $newReminder = $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $this->contact->first_name]));
+                $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $this->contact->first_name]));
             } else {
                 // add a birthdate based on an approximate age
                 $specialDate = $this->contact->setSpecialDateFromAge('birthdate', rand(10, 100));
@@ -183,9 +167,6 @@ class FakeContentTableSeeder extends Seeder
 
         if (rand(1, 2) == 1) {
             $this->contact->first_met_additional_info = $this->faker->realText(20);
-        }
-
-        if (rand(1, 2) == 1) {
             $firstMetDate = $this->faker->dateTimeThisCentury();
 
             if (rand(1, 2) == 1) {
@@ -195,7 +176,7 @@ class FakeContentTableSeeder extends Seeder
                 // add a date where we know the year
                 $specialDate = $this->contact->setSpecialDate('first_met', $firstMetDate->format('Y'), $firstMetDate->format('m'), $firstMetDate->format('d'));
             }
-            $newReminder = $specialDate->setReminder('year', 1, trans('people.introductions_reminder_title', ['name' => $this->contact->first_name]));
+            $specialDate->setReminder('year', 1, trans('people.introductions_reminder_title', ['name' => $this->contact->first_name]));
         }
 
         if (rand(1, 2) == 1) {
@@ -209,80 +190,41 @@ class FakeContentTableSeeder extends Seeder
         $this->contact->save();
     }
 
-    public function populateKids()
+    public function populateRelationships()
     {
         if (rand(1, 2) == 1) {
             foreach (range(1, rand(2, 6)) as $index) {
                 $gender = (rand(1, 2) == 1) ? 'male' : 'female';
 
-                $kid = new Contact;
-                $kid->account_id = $this->contact->account_id;
-                $kid->gender = $gender;
-                $kid->first_name = $this->faker->firstName($gender);
-                $kid->last_name = (rand(1, 2) == 1) ? $this->faker->lastName($gender) : null;
-                $kid->save();
+                $relatedContact = new Contact;
+                $relatedContact->account_id = $this->contact->account_id;
+                $relatedContact->gender_id = $this->getRandomGender()->id;
+                $relatedContact->first_name = $this->faker->firstName($gender);
+                $relatedContact->last_name = (rand(1, 2) == 1) ? $this->faker->lastName($gender) : null;
+                $relatedContact->save();
 
                 // is real contact?
+                $relatedContact->is_partial = false;
                 if (rand(1, 2) == 1) {
-                    $kid->is_partial = true;
-                    $kid->isTheOffspringOf($this->contact);
-                } else {
-                    $kid->is_partial = false;
-                    $kid->isTheOffspringOf($this->contact, true);
+                    $relatedContact->is_partial = true;
                 }
-                $kid->save();
-
-                $kid->setAvatarColor();
+                $relatedContact->setAvatarColor();
+                $relatedContact->save();
 
                 // birthdate
-                $kidBirthDate = $this->faker->dateTimeThisCentury();
+                $relatedContactBirthDate = $this->faker->dateTimeThisCentury();
                 if (rand(1, 2) == 1) {
                     // add a date where we don't know the year
-                    $specialDate = $kid->setSpecialDate('birthdate', 0, $kidBirthDate->format('m'), $kidBirthDate->format('d'));
+                    $specialDate = $relatedContact->setSpecialDate('birthdate', 0, $relatedContactBirthDate->format('m'), $relatedContactBirthDate->format('d'));
                 } else {
                     // add a date where we know the year
-                    $specialDate = $kid->setSpecialDate('birthdate', $kidBirthDate->format('Y'), $kidBirthDate->format('m'), $kidBirthDate->format('d'));
+                    $specialDate = $relatedContact->setSpecialDate('birthdate', $relatedContactBirthDate->format('Y'), $relatedContactBirthDate->format('m'), $relatedContactBirthDate->format('d'));
                 }
-                $newReminder = $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $kid->first_name]));
-            }
-        }
-    }
+                $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $relatedContact->first_name]));
 
-    public function populatePartners()
-    {
-        if (rand(1, 2) == 1) {
-            foreach (range(1, rand(2, 6)) as $index) {
-                $gender = (rand(1, 2) == 1) ? 'male' : 'female';
-
-                $partner = new Contact;
-                $partner->account_id = $this->contact->account_id;
-                $partner->gender = $gender;
-                $partner->first_name = $this->faker->firstName($gender);
-                $partner->last_name = (rand(1, 2) == 1) ? $this->faker->lastName($gender) : null;
-                $partner->save();
-
-                // is real contact?
-                if (rand(1, 2) == 1) {
-                    $partner->is_partial = true;
-                    $this->contact->setRelationshipWith($partner);
-                } else {
-                    $partner->is_partial = false;
-                    $this->contact->setRelationshipWith($partner, true);
-                }
-                $partner->save();
-
-                $partner->setAvatarColor();
-
-                // birthdate
-                $partnerBirthDate = $this->faker->dateTimeThisCentury();
-                if (rand(1, 2) == 1) {
-                    // add a date where we don't know the year
-                    $specialDate = $partner->setSpecialDate('birthdate', 0, $partnerBirthDate->format('m'), $partnerBirthDate->format('d'));
-                } else {
-                    // add a date where we know the year
-                    $specialDate = $partner->setSpecialDate('birthdate', $partnerBirthDate->format('Y'), $partnerBirthDate->format('m'), $partnerBirthDate->format('d'));
-                }
-                $newReminder = $specialDate->setReminder('year', 1, trans('people.people_add_birthday_reminder', ['name' => $partner->first_name]));
+                // set relationship
+                $relationshipId = $this->contact->account->relationshipTypes->random()->id;
+                $this->contact->setRelationship($relatedContact, $relationshipId);
             }
         }
     }
@@ -294,11 +236,9 @@ class FakeContentTableSeeder extends Seeder
                 $note = $this->contact->notes()->create([
                     'body' => $this->faker->realText(rand(40, 500)),
                     'account_id' => $this->contact->account_id,
-                    'is_favorited' => (rand(1, 3) == 1 ? true : false),
+                    'is_favorited' => rand(1, 3) == 1,
                     'favorited_at' => $this->faker->dateTimeThisCentury(),
                 ]);
-
-                $this->contact->logEvent('note', $note->id, 'create');
             }
         }
     }
@@ -307,7 +247,7 @@ class FakeContentTableSeeder extends Seeder
     {
         if (rand(1, 2) == 1) {
             for ($j = 0; $j < rand(1, 13); $j++) {
-                $date = $this->faker->dateTimeThisYear($max = 'now')->format('Y-m-d');
+                $date = Carbon::instance($this->faker->dateTimeThisYear($max = 'now'))->toDateString();
 
                 $activity = $this->contact->activities()->create([
                     'summary' => $this->faker->realText(rand(40, 100)),
@@ -317,14 +257,12 @@ class FakeContentTableSeeder extends Seeder
                     'account_id' => $this->contact->account_id,
                 ], ['account_id' => $this->contact->account_id]);
 
-                $entry = DB::table('journal_entries')->insertGetId([
+                DB::table('journal_entries')->insertGetId([
                     'account_id' => $this->account->id,
                     'date' => $date,
                     'journalable_id' => $activity->id,
-                    'journalable_type' => 'App\Activity',
+                    'journalable_type' => 'App\Models\Contact\Activity',
                 ]);
-
-                $this->contact->logEvent('activity', $activity->id, 'create');
             }
         }
     }
@@ -340,8 +278,6 @@ class FakeContentTableSeeder extends Seeder
                     'completed_at' => (rand(1, 2) == 1 ? $this->faker->dateTimeThisCentury() : null),
                     'account_id' => $this->contact->account_id,
                 ]);
-
-                $this->contact->logEvent('task', $task->id, 'create');
             }
         }
     }
@@ -357,8 +293,6 @@ class FakeContentTableSeeder extends Seeder
                     'status' => 'inprogress',
                     'account_id' => $this->contact->account_id,
                 ]);
-
-                $this->contact->logEvent('debt', $debt->id, 'create');
             }
         }
     }
@@ -377,8 +311,6 @@ class FakeContentTableSeeder extends Seeder
                     'is_an_idea' => true,
                     'has_been_offered' => false,
                 ]);
-
-                $this->contact->logEvent('gift', $gift->id, 'create');
             }
         }
     }
@@ -386,9 +318,9 @@ class FakeContentTableSeeder extends Seeder
     public function populateAddresses()
     {
         if (rand(1, 3) == 1) {
-            $address = $this->contact->addresses()->create([
+            $this->contact->addresses()->create([
                 'account_id' => $this->contact->account_id,
-                'country_id' => rand(1, 242),
+                'country' => $this->getRandomCountry(),
                 'name' => $this->faker->word,
                 'street' => (rand(1, 3) == 1) ? $this->faker->streetAddress : null,
                 'city' => (rand(1, 3) == 1) ? $this->faker->city : null,
@@ -398,13 +330,57 @@ class FakeContentTableSeeder extends Seeder
         }
     }
 
+    private $countries = null;
+
+    private function getRandomCountry()
+    {
+        if ($this->countries == null) {
+            $this->countries = CountriesHelper::getAll();
+        }
+
+        return $this->countries->random()->id;
+    }
+
     public function populateContactFields()
     {
         if (rand(1, 3) == 1) {
-            for ($j = 0; $j < rand(1, 4); $j++) {
-                $contactField = $this->contact->contactFields()->create([
-                    'contact_field_type_id' => rand(1, 6),
-                    'data' => $this->faker->url,
+
+            // Fetch number of types
+            $numberOfTypes = ContactFieldType::count();
+
+            for ($j = 0; $j < rand(1, $numberOfTypes); $j++) {
+                // Retrieve random ContactFieldType
+                $contactFieldType = ContactFieldType::orderBy(DB::raw('RAND()'))->firstOrFail();
+
+                // Fake data according to type
+                $data = null;
+                switch ($contactFieldType->name) {
+                    case 'Email':
+                        $data = $this->faker->email;
+                    break;
+                    case 'Phone':
+                        $data = $this->faker->phoneNumber;
+                    break;
+                    case 'Facebook':
+                        $data = 'https://facebook.com/'.$this->faker->userName;
+                    break;
+                    case 'Twitter':
+                        $data = 'https://twitter.com/'.$this->faker->userName;
+                    break;
+                    case 'Whatsapp':
+                        $data = $this->faker->phoneNumber;
+                    break;
+                    case 'Telegram':
+                        $data = $this->faker->phoneNumber;
+                    break;
+                    default:
+                        $data = $this->faker->url;
+                    break;
+                }
+
+                $this->contact->contactFields()->create([
+                    'contact_field_type_id' => $contactFieldType->id,
+                    'data' => $data,
                     'account_id' => $this->contact->account->id,
                 ]);
             }
@@ -423,12 +399,12 @@ class FakeContentTableSeeder extends Seeder
                 'created_at' => $date,
             ]);
 
-            $journalEntry = DB::table('journal_entries')->insertGetId([
+            DB::table('journal_entries')->insertGetId([
                 'account_id' => $this->account->id,
                 'date' => $date,
                 'journalable_id' => $entryId,
-                'journalable_type' => 'App\Entry',
-                'created_at' => \Carbon\Carbon::now(),
+                'journalable_type' => 'App\Models\Journal\Entry',
+                'created_at' => now(),
             ]);
         }
     }
@@ -439,7 +415,7 @@ class FakeContentTableSeeder extends Seeder
             for ($j = 0; $j < rand(1, 3); $j++) {
                 $date = $this->faker->dateTimeThisYear();
 
-                $petId = DB::table('pets')->insertGetId([
+                DB::table('pets')->insertGetId([
                     'account_id' => $this->account->id,
                     'contact_id' => $this->contact->id,
                     'pet_category_id' => rand(1, 11),
@@ -462,12 +438,12 @@ class FakeContentTableSeeder extends Seeder
                 'created_at' => $date,
             ]);
 
-            $journalEntry = DB::table('journal_entries')->insertGetId([
+            DB::table('journal_entries')->insertGetId([
                 'account_id' => $this->account->id,
                 'date' => $date,
                 'journalable_id' => $dayId,
-                'journalable_type' => 'App\Day',
-                'created_at' => \Carbon\Carbon::now(),
+                'journalable_type' => 'App\Models\Journal\Day',
+                'created_at' => now(),
             ]);
         }
     }
@@ -481,10 +457,70 @@ class FakeContentTableSeeder extends Seeder
     public function populateCalls()
     {
         if (rand(1, 3) == 1) {
-            $calls = $this->contact->calls()->create([
+            $this->contact->calls()->create([
                 'account_id' => $this->contact->account_id,
                 'called_at' => $this->faker->dateTimeThisYear(),
             ]);
         }
+    }
+
+    public function populateConversations()
+    {
+        if (rand(1, 1) == 1) {
+            for ($j = 0; $j < rand(1, 20); $j++) {
+                $contactFieldType = ContactFieldType::orderBy(DB::raw('RAND()'))->firstOrFail();
+
+                $conversation = (new CreateConversation)->execute([
+                    'happened_at' => $this->faker->dateTimeThisCentury(),
+                    'contact_id' => $this->contact->id,
+                    'contact_field_type_id' => $contactFieldType->id,
+                    'account_id' => $this->contact->account->id,
+                ]);
+
+                for ($k = 0; $k < rand(1, 20); $k++) {
+                    (new AddMessageToConversation)->execute([
+                        'account_id' => $this->contact->account->id,
+                        'contact_id' => $this->contact->id,
+                        'conversation_id' => $conversation->id,
+                        'written_at' => $this->faker->dateTimeThisCentury(),
+                        'written_by_me' => (rand(1, 2) == 1),
+                        'content' => $this->faker->realText(),
+                    ]);
+                }
+            }
+        }
+    }
+
+    public function populateLifeEvents()
+    {
+        if (rand(1, 1) == 1) {
+            for ($j = 0; $j < rand(1, 20); $j++) {
+                $lifeEventType = LifeEventType::orderBy(DB::raw('RAND()'))->firstOrFail();
+
+                (new CreateLifeEvent)->execute([
+                    'account_id' => $this->contact->account->id,
+                    'contact_id' => $this->contact->id,
+                    'life_event_type_id' => $lifeEventType->id,
+                    'happened_at' => $this->faker->dateTimeThisCentury(),
+                    'name' => $this->faker->realText(),
+                    'note' => $this->faker->realText(),
+                    'has_reminder' => false,
+                    'happened_at_month_unknown' => false,
+                    'happened_at_day_unknown' => false,
+                ]);
+            }
+        }
+    }
+
+    public function getRandomGender()
+    {
+        return $this->account->genders->random();
+    }
+
+    public function confirmUser($user)
+    {
+        $user->confirmation_code = null;
+        $user->confirmed = true;
+        $user->save();
     }
 }

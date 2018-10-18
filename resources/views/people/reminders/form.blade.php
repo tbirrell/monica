@@ -11,7 +11,7 @@
     {{-- Nature of reminder --}}
     <fieldset class="form-group nature">
         <div class="form-group">
-            <input type="text" class="form-control" name="title" value="{{ old('title') ?? $reminder->title }}">
+            <input type="text" class="form-control" name="title" value="{{ old('title') ?? $reminder->title }}" required>
         </div>
     </fieldset>
 
@@ -19,9 +19,9 @@
     <div class="form-group">
         <label for="next_expected_date">{{ trans('people.reminders_add_next_time') }}</label>
         <input type="date" id="next_expected_date" name="next_expected_date" class="form-control"
-               value="{{ old('next_expected_date') ?? $reminder->next_expected_date->format('Y-m-d') ?? \Carbon\Carbon::now(Auth::user()->timezone)->format('Y-m-d') }}"
-               min="{{ \Carbon\Carbon::now(Auth::user()->timezone)->format('Y-m-d') }}"
-               max="{{ \Carbon\Carbon::now(Auth::user()->timezone)->addYears(10)->format('Y-m-d') }}"
+               value="{{ old('next_expected_date') ?? $reminder->next_expected_date->toDateString() ?? now(\App\Helpers\DateHelper::getTimezone())->toDateString() }}"
+               min="{{ now(\App\Helpers\DateHelper::getTimezone())->toDateString() }}"
+               max="{{ now(\App\Helpers\DateHelper::getTimezone())->addYears(10)->toDateString() }}"
         >
 
         <fieldset class="form-group frequency{{ $errors->has('frequency_type') ? ' has-error' : '' }}">

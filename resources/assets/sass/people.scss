@@ -1,3 +1,13 @@
+.avatars {
+  a {
+    text-decoration: none;
+
+    &:hover {
+      background-color: transparent;
+    }
+  }
+}
+
 .people-list {
   .breadcrumb {
     border-bottom: 1px solid #eee;
@@ -17,7 +27,11 @@
 
     li {
       margin-bottom: 7px;
-      padding-left: 15px;
+      @if $htmldir == ltr {
+        padding-left: 15px;
+      } @else {
+        padding-right: 15px;
+      }
       position: relative;
 
       &.selected::before {
@@ -28,7 +42,11 @@
       }
 
       .number-contacts-per-tag {
-        float: right;
+        @if $htmldir == ltr {
+          float: right;
+        } @else {
+          float: left;
+        }
       }
     }
   }
@@ -46,7 +64,11 @@
 
     a {
       position: absolute;
-      right: 10px;
+      @if $htmldir == ltr {
+        right: 10px;
+      } @else {
+        left: 10px;
+      }
     }
   }
 
@@ -66,7 +88,11 @@
       .options {
         display: inline;
         position: absolute;
-        right: 10px;
+        @if $htmldir == ltr {
+          right: 10px;
+        } @else {
+          left: 10px;
+        }
 
         .dropdown-btn {
           &:after {
@@ -108,10 +134,14 @@
       font-size: 15px;
       height: 43px;
       margin-right: 5px;
-      padding-left: 5px;
       padding-top: 10px;
       vertical-align: middle;
       width: 43px;
+      @if $htmldir == ltr {
+        padding-left: 5px;
+      } @else {
+        padding-right: 5px;
+      }
 
       &.one-letter {
         padding-left: 0;
@@ -136,12 +166,16 @@
 
     .people-list-item-information {
       color: #999;
-      float: right;
       font-size: 12px;
       font-style: italic;
       position: relative;
       text-align: right;
       top: 16px;
+      @if $htmldir == ltr {
+        float: right;
+      } @else {
+        float: left;
+      }
     }
   }
 }
@@ -176,7 +210,7 @@
     background-color: #f9f9fb;
     border-bottom: 1px solid #eee;
     position: relative;
-    padding-bottom: 20px;
+    padding-bottom: 30px;
 
     .people-profile-information {
       margin-bottom: 10px;
@@ -190,10 +224,14 @@
         font-size: 30px;
         height: 87px;
         margin-right: 5px;
-        padding-left: 5px;
         padding-top: 21px;
         position: absolute;
         width: 87px;
+        @if $htmldir == ltr {
+          padding-left: 5px;
+        } @else {
+          padding-right: 5px;
+        }
 
         &.one-letter {
           padding-left: 0;
@@ -206,17 +244,25 @@
         position: absolute;
       }
 
-      h2 {
+      h3 {
         display: block;
         font-size: 24px;
         font-weight: 300;
         margin-bottom: 0;
-        padding-left: 100px;
         white-space: nowrap;
         text-overflow: ellipsis;
         overflow: hidden;
         width: calc(100% - 245px);
-        margin-right: -9999px;
+        @if $htmldir == ltr {
+          padding-left: 100px;
+          margin-right: -9999px;
+        } @else {
+          padding-right: 100px;
+          margin-left: -9999px;
+        }
+      }
+      #maidenName {
+        font-size: 14px;
       }
 
       @media (max-width: 480px) {
@@ -226,18 +272,30 @@
       }
 
       .profile-detail-summary {
-        padding-left: 100px;
         margin-top: 3px;
+        @if $htmldir == ltr {
+          padding-left: 100px;
+        } @else {
+          padding-right: 100px;
+        }
 
         li {
           &:not(:last-child) {
-            margin-right: 10px;
+            @if $htmldir == ltr {
+              margin-right: 10px;
+            } @else {
+              margin-left: 10px;
+            }
           }
         }
       }
 
       #tagsForm {
-        padding-left: 100px;
+        @if $htmldir == ltr {
+          padding-left: 100px;
+        } @else {
+          padding-right: 100px;
+        }
         position: relative;
 
         #tags_tagsinput {
@@ -253,27 +311,54 @@
           position: relative;
           top: -17px;
         }
+
+        #tags_tag {
+          width: 150px !important;
+          @if $htmldir == rtl {
+            float: left;
+          }
+        }
+
+        #tags_addTag {
+          @if $htmldir == rtl {
+            float: right;
+            overflow: true;
+          }
+        }
       }
 
       .tags {
         padding: 0;
-        padding-left: 100px;
         list-style: none;
         line-height: 20px;
         margin: 0;
         overflow: hidden;
         margin-top: 8px;
+        @if $htmldir == ltr {
+          padding-left: 100px;
+        } @else {
+          padding-right: 100px;
+        }
 
         li {
-          float: left;
+          @if $htmldir == ltr {
+            float: left;
+          } @else {
+            float: right;
+          }
         }
       }
     }
 
     .quick-actions {
       position: absolute;
-      right: 0;
       top: 14px;
+
+      @if $htmldir == ltr {
+        right: 0;
+      } @else {
+        left: 0;
+      }
     }
   }
 
@@ -281,12 +366,6 @@
     background-color: #fff;
     padding-bottom: 20px;
     padding-top: 40px;
-
-    .delete-contact {
-      font-size: 12px;
-      margin-bottom: 30px;
-      text-align: center;
-    }
 
     .section-title {
       position: relative;
@@ -297,7 +376,11 @@
         font-weight: 400;
         margin-bottom: 20px;
         padding-bottom: 10px;
-        padding-left: 23px;
+        @if $htmldir == ltr {
+          padding-left: 23px;
+        } @else {
+          padding-right: 23px;
+        }
         padding-top: 10px;
         position: relative;
       }
@@ -521,6 +604,9 @@
       margin-right: 10px;
       width: 100px;
     }
+    .pa2 li {
+      list-style: inside disc;
+    }
 
     .frequency-type,
     .value {
@@ -577,40 +663,6 @@
       }
     }
   }
-
-  &.significantother,
-  &.kid {
-    .significant-other-blank-state {
-      text-align: center;
-
-      img {
-        margin-bottom: 20px;
-        margin-top: 10px;
-      }
-    }
-
-    .central-form {
-      .hint-reminder {
-        margin-top: 10px;
-
-        p {
-          margin-bottom: 0;
-        }
-      }
-
-      .real-contact-checkbox {
-        margin-bottom: 0;
-
-        input {
-          margin-right: 5px;
-        }
-
-        .help {
-          color: #999;
-        }
-      }
-    }
-  }
 }
 
 .create-people {
@@ -650,7 +702,11 @@
         margin-top: 10px;
 
         h2 {
-          padding-left: 80px;
+          @if $htmldir == ltr {
+            padding-left: 80px;
+          } @else {
+            padding-right: 80px;
+          }
 
           span {
             display: none;
@@ -669,6 +725,9 @@
           .tagsFormActions {
             display: block;
             margin-top: 20px;
+          }
+          .tags_tag {
+            width: 100% !important;
           }
         }
 

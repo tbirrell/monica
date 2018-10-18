@@ -5,17 +5,17 @@
   <div class="br2 pa3 mb3 f6" v-bind:class="[editMode ? 'bg-washed-yellow b--yellow ba' : 'bg-near-white']">
     <div class="w-100 dt">
       <div class="dtc">
-        <h3 class="f6 ttu normal">{{ trans('people.contact_address_title') }}</h3>
+        <h3 class="f6 ttu normal">{{ $t('people.contact_address_title') }}</h3>
       </div>
-      <div class="dtc tr" v-if="contactAddresses.length > 0">
-        <a class="pointer" @click="editMode = true" v-if="!editMode">{{ trans('app.edit') }}</a>
-        <a class="pointer" @click="[editMode = false, addMode = false]" v-if="editMode">{{ trans('app.done') }}</a>
+      <div class="dtc" v-bind:class="[ dirltr ? 'tr' : 'tl' ]" v-if="contactAddresses.length > 0">
+        <a class="pointer" @click="editMode = true" v-if="!editMode">{{ $t('app.edit') }}</a>
+        <a class="pointer" @click="[editMode = false, addMode = false]" v-if="editMode">{{ $t('app.done') }}</a>
       </div>
     </div>
 
     <!-- EMPTY BOX - DISPLAY ADD BUTTON -->
     <p class="mb0" v-if="contactAddresses.length == 0 && !addMode">
-      <a class="pointer" @click="toggleAdd">{{ trans('app.add') }}</a>
+      <a class="pointer" @click="toggleAdd">{{ $t('app.add') }}</a>
     </p>
 
     <!-- LIST OF ADDRESSES  -->
@@ -30,7 +30,7 @@
 
             <span v-if="editMode">{{ contactAddress.address }}</span>
 
-            <span class="light-silver">({{ contactAddress.name }})</span>
+            <span class="light-silver" v-if="contactAddress.name">({{ contactAddress.name }})</span>
 
             <div class="fr" v-if="editMode">
               <i class="fa fa-pencil-square-o pointer pr2" @click="toggleEdit(contactAddress)"></i>
@@ -44,47 +44,47 @@
           <form class="measure center">
             <div class="mt3">
               <label class="db fw6 lh-copy f6">
-                {{ trans('people.contact_address_form_name') }}
+                {{ $t('people.contact_address_form_name') }}
               </label>
               <input class="pa2 db w-100" type="text" v-model="updateForm.name">
             </div>
             <div class="mt3">
               <label class="db fw6 lh-copy f6">
-                {{ trans('people.contact_address_form_street') }}
+                {{ $t('people.contact_address_form_street') }}
               </label>
               <input class="pa2 db w-100" type="text" v-model="updateForm.street">
             </div>
             <div class="mt3">
               <label class="db fw6 lh-copy f6">
-                {{ trans('people.contact_address_form_city') }}
+                {{ $t('people.contact_address_form_city') }}
               </label>
               <input class="pa2 db w-100" type="text" v-model="updateForm.city">
             </div>
             <div class="mt3">
               <label class="db fw6 lh-copy f6">
-                {{ trans('people.contact_address_form_province') }}
+                {{ $t('people.contact_address_form_province') }}
               </label>
               <input class="pa2 db w-100" type="text" v-model="updateForm.province">
             </div>
             <div class="mt3">
               <label class="db fw6 lh-copy f6">
-                {{ trans('people.contact_address_form_postal_code') }}
+                {{ $t('people.contact_address_form_postal_code') }}
               </label>
               <input class="pa2 db w-100" type="text" v-model="updateForm.postal_code">
             </div>
             <div class="mt3">
               <label class="db fw6 lh-copy f6">
-                {{ trans('people.contact_address_form_country') }}
+                {{ $t('people.contact_address_form_country') }}
               </label>
-              <select class="db w-100 h2" v-model="updateForm.country_id">
+              <select class="db w-100 h2" v-model="updateForm.country">
                 <option v-for="country in countries" v-bind:value="country.id">
                   {{ country.country }}
                 </option>
               </select>
             </div>
             <div class="lh-copy mt3">
-              <a @click.prevent="update(contactAddress)" class="btn btn-primary">{{ trans('app.add') }}</a>
-              <a class="btn" @click="toggleEdit(contactAddress)">{{ trans('app.cancel') }}</a>
+              <a @click.prevent="update(contactAddress)" class="btn btn-primary">{{ $t('app.add') }}</a>
+              <a class="btn" @click="toggleEdit(contactAddress)">{{ $t('app.cancel') }}</a>
             </div>
           </form>
         </div>
@@ -93,7 +93,7 @@
 
       <!-- ADD BUTTON ONLY WHEN EDIT MODE IS AVAILABLE  -->
       <li v-if="editMode && !addMode">
-        <a class="pointer" @click="toggleAdd">{{ trans('app.add') }}</a>
+        <a class="pointer" @click="toggleAdd">{{ $t('app.add') }}</a>
       </li>
     </ul>
 
@@ -103,39 +103,39 @@
       <form class="measure center">
         <div class="mt3">
           <label class="db fw6 lh-copy f6">
-            {{ trans('people.contact_address_form_name') }}
+            {{ $t('people.contact_address_form_name') }}
           </label>
           <input class="pa2 db w-100" type="text" v-model="createForm.name">
         </div>
         <div class="mt3">
           <label class="db fw6 lh-copy f6">
-            {{ trans('people.contact_address_form_street') }}
+            {{ $t('people.contact_address_form_street') }}
           </label>
           <input class="pa2 db w-100" type="text" v-model="createForm.street">
         </div>
         <div class="mt3">
           <label class="db fw6 lh-copy f6">
-            {{ trans('people.contact_address_form_city') }}
+            {{ $t('people.contact_address_form_city') }}
           </label>
           <input class="pa2 db w-100" type="text" v-model="createForm.city">
         </div>
         <div class="mt3">
           <label class="db fw6 lh-copy f6">
-            {{ trans('people.contact_address_form_province') }}
+            {{ $t('people.contact_address_form_province') }}
           </label>
           <input class="pa2 db w-100" type="text" v-model="createForm.province">
         </div>
         <div class="mt3">
           <label class="db fw6 lh-copy f6">
-            {{ trans('people.contact_address_form_postal_code') }}
+            {{ $t('people.contact_address_form_postal_code') }}
           </label>
           <input class="pa2 db w-100" type="text" v-model="createForm.postal_code">
         </div>
         <div class="mt3">
           <label class="db fw6 lh-copy f6">
-            {{ trans('people.contact_address_form_country') }}
+            {{ $t('people.contact_address_form_country') }}
           </label>
-          <select class="db w-100 h2" v-model="createForm.country_id">
+          <select class="db w-100 h2" v-model="createForm.country">
             <option value="0"></option>
             <option v-for="country in countries" v-bind:value="country.id">
               {{ country.country }}
@@ -143,8 +143,8 @@
           </select>
         </div>
         <div class="lh-copy mt3">
-          <a @click.prevent="store" class="btn btn-primary">{{ trans('app.add') }}</a>
-          <a class="btn" @click="addMode = false">{{ trans('app.cancel') }}</a>
+          <a @click.prevent="store" class="btn btn-primary">{{ $t('app.add') }}</a>
+          <a class="btn" @click="addMode = false">{{ $t('app.cancel') }}</a>
         </div>
       </form>
     </div>
@@ -165,7 +165,7 @@
                 addMode: false,
 
                 createForm: {
-                    country_id: 0,
+                    country: 0,
                     name: '',
                     street: '',
                     city: '',
@@ -175,13 +175,15 @@
 
                 updateForm: {
                     id: '',
-                    country_id: 0,
+                    country: 0,
                     name: '',
                     street: '',
                     city: '',
                     province: '',
                     postal_code: ''
                 },
+
+                dirltr: true,
             };
         },
 
@@ -199,33 +201,34 @@
             this.prepareComponent();
         },
 
-        props: ['contactId'],
+        props: ['hash'],
 
         methods: {
             /**
              * Prepare the component.
              */
             prepareComponent() {
+                this.dirltr = this.$root.htmldir == 'ltr';
                 this.getAddresses();
                 this.getCountries();
             },
 
             getAddresses() {
-                axios.get('/people/' + this.contactId + '/addresses')
+                axios.get('/people/' + this.hash + '/addresses')
                         .then(response => {
                             this.contactAddresses = response.data;
                         });
             },
 
             getCountries() {
-                axios.get('/people/' + this.contactId + '/countries')
+                axios.get('/countries')
                         .then(response => {
                             this.countries = response.data;
                         });
             },
 
             reinitialize() {
-                this.createForm.country_id = '';
+                this.createForm.country = '';
                 this.createForm.name = '';
                 this.createForm.street = '';
                 this.createForm.city = '';
@@ -241,7 +244,7 @@
             toggleEdit(contactAddress) {
                 Vue.set(contactAddress, 'edit', !contactAddress.edit);
                 this.updateForm.id = contactAddress.id;
-                this.updateForm.country_id = contactAddress.country_id;
+                this.updateForm.country = contactAddress.country;
                 this.updateForm.name = contactAddress.name;
                 this.updateForm.street = contactAddress.street;
                 this.updateForm.city = contactAddress.city;
@@ -251,7 +254,7 @@
 
             store() {
                 this.persistClient(
-                    'post', '/people/' + this.contactId + '/addresses',
+                    'post', '/people/' + this.hash + '/addresses',
                     this.createForm
                 );
 
@@ -260,7 +263,7 @@
 
             update(contactAddress) {
                 this.persistClient(
-                    'put', '/people/' + this.contactId + '/addresses/' + contactAddress.id,
+                    'put', '/people/' + this.hash + '/addresses/' + contactAddress.id,
                     this.updateForm
                 );
             },
@@ -269,7 +272,7 @@
                 this.updateForm.id = contactAddress.id;
 
                 this.persistClient(
-                    'delete', '/people/' + this.contactId + '/addresses/' + contactAddress.id,
+                    'delete', '/people/' + this.hash + '/addresses/' + contactAddress.id,
                     this.updateForm
                 );
 
@@ -289,7 +292,7 @@
                         if (typeof error.response.data === 'object') {
                             form.errors = _.flatten(_.toArray(error.response.data));
                         } else {
-                            form.errors = ['Something went wrong. Please try again.'];
+                            form.errors = [this.$t('app.error_try_again')];
                         }
                     });
             },

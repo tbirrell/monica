@@ -8,7 +8,7 @@
     <journal-calendar v-bind:journal-entry="journalEntry"></journal-calendar>
 
     <!-- Right column: showing logs -->
-    <div class="fl journal-calendar-content">
+    <div :class="[ dirltr ? 'fl' : 'fr' ]" class="journal-calendar-content">
       <div class="br3 ba b--gray-monica bg-white pr3 pb3 pt3 mb3 journal-line">
         <div class="flex">
 
@@ -21,15 +21,15 @@
           <!-- Log content -->
           <div class="flex-auto">
             <p class="mb1">
-              <span class="pr2 f6 avenir">{{ trans('journal.journal_entry_type_journal') }}</span>
+              <span class="pr2 f6 avenir">{{ $t('journal.journal_entry_type_journal') }}</span>
             </p>
             <h3 class="mb1">{{ entry.title }}</h3>
 
-            <p>{{ entry.post }}</p>
+            <div class="markdown" v-html="entry.post"></div>
 
             <ul class="f7">
               <li class="di">
-                <a class="pointer" @click="trash()">Delete</a>
+                <a class="pointer" :cy-name="'entry-delete-button-' + entry.id" @click="trash()">{{ $t('app.delete') }}</a>
               </li>
             </ul>
           </div>
@@ -47,7 +47,9 @@
          */
         data() {
             return {
-                entry: []
+                entry: [],
+
+                dirltr: true,
             };
         },
 
@@ -72,6 +74,7 @@
              * Prepare the component.
              */
             prepareComponent() {
+                this.dirltr = this.$root.htmldir == 'ltr';
               // not necessary, just a way to add more clarity to the code
                 this.entry = this.journalEntry.object
             },

@@ -10,7 +10,11 @@
 
   .close {
     position: absolute;
-    right: 19px;
+    @if $htmldir == ltr {
+      right: 19px;
+    } @else {
+      left: 19px;
+    }
     top: 14px;
     font-size: 30px;
   }

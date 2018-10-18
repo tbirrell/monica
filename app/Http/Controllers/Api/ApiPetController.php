@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Pet;
-use Validator;
-use App\Contact;
+use App\Models\Contact\Pet;
 use Illuminate\Http\Request;
+use App\Models\Contact\Contact;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\Pet\Pet as PetResource;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -62,7 +62,7 @@ class ApiPetController extends ApiController
             $pet = Pet::create(
               $request->all()
               + [
-                static::ACCOUNT_ID => auth()->user()->account->id,
+                static::ACCOUNT_ID => auth()->user()->account_id,
               ]
             );
         } catch (QueryException $e) {

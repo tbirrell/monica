@@ -3,11 +3,12 @@
     <div class="row">
       <div class="col-xs-12">
 
+        @include ('partials.errors')
         @include ('partials.notification')
 
         <div class="people-profile-information">
 
-          @if ($contact->has_avatar == true)
+          @if ($contact->has_avatar)
             <img src="{{ $contact->getAvatarURL(110) }}" width="87">
           @else
             @if (! is_null($contact->gravatar_url))
@@ -25,14 +26,24 @@
             @endif
           @endif
 
-          <h2>
-            {{ $contact->getCompleteName(auth()->user()->name_order) }}
-            @if ($contact->birthday_special_date_id)
+          <h3>
+            <span class="{{ htmldir() == 'ltr' ? 'mr1' : 'ml1' }}">{{ $contact->name }}</span>
+            @if(! is_null($contact->maiden_name))
+              <span class="f6" id="maidenName">(née {{$contact->maiden_name}})</span>
+            @endif
+
+            <contact-favorite hash="{!! $contact->hashID() !!}" :starred="{{ json_encode($contact->is_starred) }}"></contact-favorite>
+
+            @if ($contact->birthday_special_date_id && !($contact->is_dead))
               @if ($contact->birthdate->getAge())
                 <span class="ml3 light-silver f4">(<i class="fa fa-birthday-cake mr1"></i> {{ $contact->birthdate->getAge() }})</span>
               @endif
+            @elseif ($contact->is_dead)
+                @if (! is_null($contact->deceasedDate))
+                  <span class="ml3 light-silver f4">({{ trans('people.deceased_age') }} {{ $contact->getAgeAtDeath() }})</span>
+                @endif
             @endif
-          </h2>
+          </h3>
 
           <ul class="horizontal profile-detail-summary">
             @if ($contact->is_dead)
@@ -45,31 +56,23 @@
               </li>
             @endif
             <li>
-              @if (is_null($contact->getLastCalled()))
-                {{ trans('people.last_called_empty') }}
-              @else
-                {{ trans('people.last_called', ['date' => \App\Helpers\DateHelper::getShortDate($contact->getLastCalled())]) }}
-              @endif
-            </li>
-            <li>
-              @if (is_null($contact->getLastActivityDate()))
-                {{ trans('people.last_activity_date_empty') }}
-              @else
-                {{ trans('people.last_activity_date', ['date' => \App\Helpers\DateHelper::getShortDate($contact->getLastActivityDate())]) }}
-              @endif
+              {{ $contact->description }}
             </li>
           </ul>
 
           <ul class="tags">
+            <li class="{{ htmldir() == 'rtl' ? 'ml3' : 'mr3' }}">
+              <stay-in-touch :contact="{{ $contact }}" hash="{{ $contact->hashID() }}" limited="{{ auth()->user()->account->hasLimitations() }}"></stay-in-touch>
+            </li>
             <ul class="tags-list">
               @foreach ($contact->tags as $tag)
-                <li class="pretty-tag"><a href="/people?tags={{ $tag->name_slug }}">{{ $tag->name }}</a></li>
+                <li class="pretty-tag"><a href="{{ route('people.index') }}?tag1={{ $tag->name_slug }}">{{ $tag->name }}</a></li>
               @endforeach
             </ul>
-            <li><a href="#" id="showTagForm">{{ trans('people.tag_edit') }}</a></li>
+            <li class="{{ htmldir() == 'rtl' ? 'ml3' : 'mr3' }}"><a href="#" id="showTagForm">{{ trans('people.tag_edit') }}</a></li>
           </ul>
 
-          <form method="POST" action="/people/{{ $contact->id }}/tags/update" id="tagsForm">
+          <form method="POST" action="{{ route('people.tags.update', $contact) }}" id="tagsForm">
             {{ csrf_field() }}
             <input name="tags" id="tags" value="{{ $contact->getTagsAsString() }}" />
             <div class="tagsFormActions">
@@ -80,7 +83,7 @@
 
           <ul class="horizontal quick-actions">
             <li>
-              <a href="/people/{{ $contact->id }}/edit" class="btn edit-information">{{ trans('people.edit_contact_information') }}</a>
+              <a href="{{ route('people.edit', $contact) }}" class="btn edit-information" id="button-edit-contact">{{ trans('people.edit_contact_information') }}</a>
             </li>
           </ul>
         </div>
