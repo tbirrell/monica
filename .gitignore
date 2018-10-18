@@ -13,6 +13,7 @@ cypress.env.json
 npm-debug.log*
 /results
 .deploy.json
+/.idea
 yarn-error.log
 /tests/Cypress/screenshots
 /tests/Cypress/videos

@@ -65,10 +65,11 @@ class ContactsController extends Controller
 
             $contacts = $user->account->contacts()->real()->sortedBy($sort);
 
-            $contacts = $contacts->tags($tags)->get();
+            $contacts = $contacts->tags($tags)->where('is_group_proxy',0)->get();
+            
         } else {
-            // get all contacts
-            $contacts = $user->account->contacts()->real()->sortedBy($sort)->get();
+            $contacts = $user->account->contacts()->real()->sortedBy($sort)->where('is_group_proxy',0)->get();
+            
         }
 
         // starred contacts

@@ -1,5 +1,7 @@
 <?php
 
+use App\Mail\NotificationEmail;
+use App\Models\Contact\Notification;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +23,10 @@ if (App::environment('production')) {
 }
 
 Route::get('/', 'Auth\LoginController@showLoginOrRegister')->name('login');
-
+Route::get('xyz', function (){
+    echo 'test';
+    dump(Mail::to('test@xristos.net')->send(new NotificationEmail(new Notification, app()->user)));
+});
 Auth::routes();
 
 Route::get('/invitations/accept/{key}', 'SettingsController@acceptInvitation');
@@ -112,7 +117,7 @@ Route::middleware(['auth', 'auth.confirm', 'u2f', '2fa'])->group(function () {
             Route::delete('/people/{contact}/notes/{note}', 'Contacts\\NotesController@destroy');
             Route::post('/people/{contact}/notes/{note}/toggle', 'Contacts\\NotesController@toggle');
         });
-
+        
         // Food preferencies
         Route::name('food.')->group(function () {
             Route::get('/people/{contact}/food', 'ContactsController@editFoodPreferencies')->name('index');

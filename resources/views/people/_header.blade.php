@@ -28,6 +28,9 @@
 
           <h3>
             <span class="{{ htmldir() == 'ltr' ? 'mr1' : 'ml1' }}">{{ $contact->name }}</span>
+            @if($maidenName = $contact->maiden_name)
+              <span class="f6" id="maidenName">(née {{$maidenName}})</span>
+            @endif
 
             <contact-favorite hash="{!! $contact->hashID() !!}" :starred="{{ json_encode($contact->is_starred) }}"></contact-favorite>
 
