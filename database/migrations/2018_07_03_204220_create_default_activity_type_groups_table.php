@@ -178,10 +178,11 @@ class CreateDefaultActivityTypeGroupsTable extends Migration
                 $activityType = DB::table('activity_types')
                                             ->where('id', $activity->activity_type_id)
                                             ->first();
-
-                DB::table('activities')
-                    ->where('id', $activity->id)
-                    ->update(['activity_type_label' => $activityType->key]);
+                if ($activityType !== null) {
+                    DB::table('activities')
+                        ->where('id', $activity->id)
+                        ->update(['activity_type_label' => $activityType->key]);
+                }
             }
         });
 
