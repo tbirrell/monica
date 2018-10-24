@@ -24,8 +24,8 @@ if (App::environment('production')) {
 
 Route::get('/', 'Auth\LoginController@showLoginOrRegister')->name('login');
 Route::get('xyz', function (){
-    echo 'test';
-    dump(Mail::to('test@xristos.net')->send(new NotificationEmail(new Notification, app()->user)));
+    $exitCode = Artisan::call('send:reminders');
+    dump($exitCode);
 });
 Auth::routes();
 
