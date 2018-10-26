@@ -24,6 +24,8 @@ if (App::environment('production')) {
 
 Route::get('/', 'Auth\LoginController@showLoginOrRegister')->name('login');
 Route::get('xyz', function (){
+    dump(config('mail'));
+    dump(config('services'));
     $exitCode = Artisan::call('send:reminders');
     dump($exitCode);
 });
