@@ -5,6 +5,7 @@ namespace App\Models\Contact;
 use App\Helpers\DBHelper;
 use App\Models\User\User;
 use App\Traits\Searchable;
+use Illuminate\Support\Str;
 use App\Models\Journal\Entry;
 use App\Models\Account\Account;
 use Illuminate\Support\Collection;
@@ -46,6 +47,7 @@ class Contact extends Model
 //        'middle_name',
         'last_name',
         'nickname',
+        'description',
         'job',
     ];
     
@@ -88,6 +90,7 @@ class Contact extends Model
         'avatar_external_url',
         'last_consulted_at',
         'created_at',
+        'first_met_additional_info',
     ];
     
     /**
@@ -114,6 +117,7 @@ class Contact extends Model
         'is_dead' => 'boolean',
         'has_avatar' => 'boolean',
         'is_starred' => 'boolean',
+        'is_active' => 'boolean',
     ];
     
     /**
@@ -369,6 +373,16 @@ class Contact extends Model
     }
 
     /**
+     * Get the Document records associated with the contact.
+     *
+     * @return HasMany
+     */
+    public function documents()
+    {
+        return $this->hasMany(Document::class);
+    }
+
+    /**
      * Get the Life event records associated with the contact.
      *
      * @return HasMany
@@ -426,6 +440,28 @@ class Contact extends Model
         return $query->where('is_partial', 0);
     }
     
+    /**
+     * Scope a query to only include contacts who are active.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', 1);
+    }
+
+    /**
+     * Scope a query to only include contacts who are not active.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeNotActive($query)
+    {
+        return $query->where('is_active', 0);
+    }
+
     /**
      * Get the first name of the contact.
      *
@@ -508,7 +544,7 @@ class Contact extends Model
      */
     public function getInitialsAttribute()
     {
-        preg_match_all('/(?<=\s|^)[a-zA-Z0-9]/i', $this->name, $initials);
+        preg_match_all('/(?<=\s|^)[a-zA-Z0-9]/i', Str::ascii($this->name), $initials);
 
         return implode('', $initials[0]);
     }
@@ -1378,17 +1414,19 @@ class Contact extends Model
         
         $specialDate = new SpecialDate;
         $specialDate->setToContact($this)->createFromAge($age);
-        
-        if ($occasion == 'birthdate') {
-            $this->birthday_special_date_id = $specialDate->id;
-        }
-        
-        if ($occasion == 'deceased_date') {
-            $this->deceased_special_date_id = $specialDate->id;
-        }
-        
-        if ($occasion == 'first_met') {
-            $this->first_met_special_date_id = $specialDate->id;
+
+        switch ($occasion) {
+            case 'birthdate':
+                $this->birthday_special_date_id = $specialDate->id;
+                break;
+            case 'deceased_date':
+                $this->deceased_special_date_id = $specialDate->id;
+                break;
+            case 'first_met':
+                $this->first_met_special_date_id = $specialDate->id;
+                break;
+            default:
+                break;
         }
         
         $this->save();
@@ -1413,9 +1451,9 @@ class Contact extends Model
                     $birthdate = $this->birthdate;
                     $this->birthday_special_date_id = null;
                     $this->save();
-                    
-                    $this->birthdate->deleteReminder();
-                    $this->birthdate->delete();
+
+                    $birthdate->deleteReminder();
+                    $birthdate->delete();
                 }
                 break;
             case 'deceased_date':
@@ -1437,11 +1475,14 @@ class Contact extends Model
                     $firstMetDate->deleteReminder();
                     $firstMetDate->delete();
                 }
+            break;
+            default:
                 break;
         }
     }
     
     /**
+<<<<<<< HEAD
      * Sets a tag to the contact.
      *
      * @param string $tag
@@ -1479,6 +1520,8 @@ class Contact extends Model
     }
     
     /**
+=======
+>>>>>>> monicahq
      * Get the Relationship object representing the relation between two contacts.
      *
      * @param  Contact $otherContact
@@ -1593,7 +1636,19 @@ class Contact extends Model
      */
     public function getAgeAtDeath()
     {
-        return $this->deceasedDate->getAgeAtDeath();
+        if (! $this->deceasedDate) {
+            return;
+        }
+
+        if ($this->deceasedDate->is_year_unkown == 1) {
+            return;
+        }
+
+        if (! $this->birthdate) {
+            return;
+        }
+
+        return $this->birthdate->date->diffInYears($this->deceasedDate->date);
     }
     
     /**

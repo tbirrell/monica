@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\AvatarHelper;
 use App\Models\Contact\Contact;
 use App\Models\Contact\Activity;
 use App\Models\Journal\JournalEntry;
@@ -44,8 +45,8 @@ class ActivitiesController extends Controller
 
         return view('activities.add')
             ->withContact($contact)
-            ->withActivity($activity);
-
+            ->withAvatar(AvatarHelper::get($contact, 87))
+            ->withActivity(new Activity);
     }
 
     /**
@@ -106,6 +107,7 @@ class ActivitiesController extends Controller
     {
         return view('activities.edit')
             ->withContact($contact)
+            ->withAvatar(AvatarHelper::get($contact, 87))
             ->withActivity($activity);
     }
 
