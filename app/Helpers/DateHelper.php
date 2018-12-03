@@ -110,11 +110,12 @@ class DateHelper
      * like "Oct 29, 1981".
      *
      * @param Carbon $date
+     * @param bool $atFaceValue
      * @return string
      */
-    public static function getShortDate($date)
+    public static function getShortDate($date, $atFaceValue = false)
     {
-        $date = new Date($date, static::getTimezone());
+        $date = new Date($date, ($atFaceValue ? null : static::getTimezone()));
         $format = trans('format.short_date_year', [], Date::getLocale());
 
         return $date->format($format) ?: '';
@@ -125,11 +126,12 @@ class DateHelper
      * like "Oct", or "Dec".
      *
      * @param Carbon $date
+     * @param bool $atFaceValue
      * @return string
      */
-    public static function getShortMonth($date)
+    public static function getShortMonth($date, $atFaceValue = false)
     {
-        $date = new Date($date, static::getTimezone());
+        $date = new Date($date, ($atFaceValue ? null : static::getTimezone()));
         $format = trans('format.short_month', [], Date::getLocale());
 
         return $date->format($format) ?: '';
@@ -140,11 +142,12 @@ class DateHelper
      * like "October 2010", or "March 2032".
      *
      * @param Carbon $date
+     * @param bool $atFaceValue
      * @return string
      */
-    public static function getFullMonthAndDate($date)
+    public static function getFullMonthAndDate($date, $atFaceValue = false)
     {
-        $date = new Date($date, static::getTimezone());
+        $date = new Date($date, ($atFaceValue ? null : static::getTimezone()));
         $format = trans('format.full_month_year', [], Date::getLocale());
 
         return $date->format($format) ?: '';
@@ -155,11 +158,12 @@ class DateHelper
      * like "Mon", or "Wed".
      *
      * @param Carbon $date
+     * @param bool $atFaceValue
      * @return string
      */
-    public static function getShortDay($date)
+    public static function getShortDay($date, $atFaceValue = false)
     {
-        $date = new Date($date, static::getTimezone());
+        $date = new Date($date, ($atFaceValue ? null : static::getTimezone()));
         $format = trans('format.short_day', [], Date::getLocale());
 
         return $date->format($format) ?: '';
@@ -170,11 +174,12 @@ class DateHelper
      * like "Oct 29".
      *
      * @param Carbon $date
+     * @param bool $atFaceValue
      * @return string
      */
-    public static function getShortDateWithoutYear($date)
+    public static function getShortDateWithoutYear($date, $atFaceValue = false)
     {
-        $date = new Date($date, static::getTimezone());
+        $date = new Date($date, ($atFaceValue ? null : static::getTimezone()));
         $format = trans('format.short_date', [], Date::getLocale());
 
         return $date->format($format) ?: '';
@@ -185,11 +190,12 @@ class DateHelper
      * like "Oct 29, 1981 19:32".
      *
      * @param Carbon $date
+     * @param bool $atFaceValue
      * @return string
      */
-    public static function getShortDateWithTime($date)
+    public static function getShortDateWithTime($date, $atFaceValue = false)
     {
-        $date = new Date($date, static::getTimezone());
+        $date = new Date($date, ($atFaceValue ? null : static::getTimezone()));
         $format = trans('format.short_date_year_time', [], Date::getLocale());
 
         return $date->format($format) ?: '';
