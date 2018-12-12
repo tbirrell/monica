@@ -191,8 +191,6 @@ class Contact extends Model
     }
     
     /**
-<<<<<<< HEAD
-=======
      * Get the event records associated with the contact.
      *
      * @return HasMany
@@ -203,7 +201,6 @@ class Contact extends Model
     }
     
     /**
->>>>>>> dev
      * Get the note records associated with the contact.
      *
      * @return HasMany
@@ -1224,6 +1221,7 @@ class Contact extends Model
     }
     
     /**
+<<<<<<< HEAD
      * Update the last called info on the contact, if the call has been made
      * in the most recent date.
      *
@@ -1242,6 +1240,8 @@ class Contact extends Model
     }
     
     /**
+=======
+>>>>>>> monicahq
      * Set a relationship between two contacts.
      *
      * @param Contact $otherContact
