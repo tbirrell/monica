@@ -50,7 +50,6 @@ class RelationshipsController extends Controller
                 'name' => $relationshipType->getLocalizedName($contact, true),
             ]);
         }
-        dump($arrayRelationshipTypes);
 
         return view('people.relationship.new')
             ->withContact($contact)
