@@ -21,7 +21,7 @@
           @if ($contact->birthday_special_date_id && !($contact->is_dead))
             @if ($contact->birthdate->getAge())
               <span class="{{ htmldir() == 'ltr' ? 'mr1' : 'ml1' }}">@include('partials.icons.header_birthday')</span>
-              <span>{{ $contact->birthdate->getAge() }}</span>
+              <span>{{$contact->birthdate->toShortString()}} ({{ $contact->birthdate->getAge() }})</span>
             @endif
           @elseif ($contact->is_dead)
               @if (! is_null($contact->deceasedDate))
