@@ -58,13 +58,22 @@ class LifeEventsController extends Controller
         $lifeEvents = $contact->lifeEvents()->get();
 
         foreach ($lifeEvents as $lifeEvent) {
+            if ($lifeEvent->happened_at_month_unknown) {
+                $happened_at = $lifeEvent->happened_at->format('Y');
+            } else if ($lifeEvent->happened_at_day_unknown) {
+                $happened_at = $lifeEvent->happened_at->format('M Y');
+            } else {
+                $happened_at = DateHelper::getShortDate($lifeEvent->happened_at);
+            }
+
             $data = [
                 'id' => $lifeEvent->id,
                 'life_event_type' => $lifeEvent->lifeEventType->name,
                 'default_life_event_type_key' => $lifeEvent->lifeEventType->default_life_event_type_key,
                 'name' => $lifeEvent->name,
                 'note' => $lifeEvent->note,
-                'happened_at' => DateHelper::getShortDate($lifeEvent->happened_at),
+                // 'happened_at' => DateHelper::getShortDate($lifeEvent->happened_at)
+                'happened_at' => $happened_at
             ];
             $lifeEventsCollection->push($data);
         }
