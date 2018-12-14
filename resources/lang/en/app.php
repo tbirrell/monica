@@ -133,6 +133,11 @@ return [
     'relationship_type_date_with_name' => ':name’s date',
     'relationship_type_date_female_with_name' => ':name’s date',
 
+    'relationship_type_isdating' => 'is dating',
+    'relationship_type_isdating_female' => 'is dating',
+    'relationship_type_isdating_with_name' => 'someone :name is dating',
+    'relationship_type_isdating_female_with_name' => 'someone :name is dating',
+
     'relationship_type_lover' => 'lover',
     'relationship_type_lover_female' => 'lover',
     'relationship_type_lover_with_name' => ':name’s lover',
