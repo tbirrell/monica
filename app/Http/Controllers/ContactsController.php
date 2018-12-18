@@ -316,8 +316,10 @@ class ContactsController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'firstname' => 'required|max:50',
+            'middlename' => 'max:100',
             'lastname' => 'max:100',
             'nickname' => 'max:100',
+            'maidenname' => 'max:100',
             'description' => 'max:240',
             'gender' => 'required',
             'file' => 'max:10240',
@@ -339,7 +341,9 @@ class ContactsController extends Controller
 
         $contact->gender_id = $request->input('gender');
         $contact->description = $request->input('description');
+        $contact->middle_name = $request->input('middlename', null);
         $contact->nickname = $request->input('nickname', null);
+        $contact->maiden_name = $request->input('maidenname', null);
 
         if ($request->file('avatar') != '') {
             if ($contact->has_avatar) {
