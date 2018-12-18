@@ -41,7 +41,7 @@
                   value="{{ $contact->middle_name }}"
                   :input-type="'text'"
                   :id="'middlename'"
-                  :required="true"
+                  :required="false"
                   :title="'{{ trans('people.people_add_middlename') }}'">
                 </form-input>
               </div>
@@ -73,7 +73,7 @@
                   value="{{ $contact->middle_name }}"
                   :input-type="'text'"
                   :id="'middlename'"
-                  :required="true"
+                  :required="false"
                   :title="'{{ trans('people.people_add_middlename') }}'">
                 </form-input>
               </div>
