@@ -8,6 +8,7 @@ use App\Traits\Searchable;
 use Illuminate\Support\Str;
 use App\Models\Account\Photo;
 use App\Models\Journal\Entry;
+use App\Helpers\WeatherHelper;
 use App\Models\Account\Account;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -25,8 +26,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Http\Resources\Address\Address as AddressResource;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
-use App\Http\Resources\Address\AddressShort as AddressShortResource;
 use App\Http\Resources\Contact\ContactShort as ContactShortResource;
 use App\Http\Resources\ContactField\ContactField as ContactFieldResource;
 
@@ -86,7 +87,6 @@ class Contact extends Model
         'job',
         'company',
         'food_preferencies',
-        'linkedin_profile_url',
         'is_dead',
         'avatar_external_url',
         'last_consulted_at',
@@ -398,6 +398,16 @@ class Contact extends Model
     public function lifeEvents()
     {
         return $this->hasMany(LifeEvent::class)->orderBy('life_events.happened_at', 'desc');
+    }
+
+    /**
+     * Get the Occupation records associated with the contact.
+     *
+     * @return HasMany
+     */
+    public function occupations()
+    {
+        return $this->hasMany(Occupation::class);
     }
 
     /**
@@ -724,7 +734,7 @@ class Contact extends Model
         $incompleteName = $this->first_name;
         
         if (! is_null($this->last_name)) {
-            $incompleteName = $incompleteName.' '.substr($this->last_name, 0, 1);
+            $incompleteName .= ' '.mb_substr($this->last_name, 0, 1);
         }
         
         if ($this->is_dead) {
@@ -878,8 +888,6 @@ class Contact extends Model
     }
     
     /**
-<<<<<<< HEAD
-=======
      * Log an event in the Event table about this contact.
      *
      * @param  string $objectType Contact, Activity, Kid,...
@@ -900,7 +908,6 @@ class Contact extends Model
     }
     
     /**
->>>>>>> dev
      * Set the name of the contact.
      *
      * @param  string $firstName
@@ -1220,7 +1227,7 @@ class Contact extends Model
      */
     public function getAddressesForAPI()
     {
-        return AddressShortResource::collection($this->addresses);
+        return AddressResource::collection($this->addresses);
     }
     
     /**
@@ -1232,27 +1239,6 @@ class Contact extends Model
     }
     
     /**
-<<<<<<< HEAD
-     * Update the last called info on the contact, if the call has been made
-     * in the most recent date.
-     *
-     * @param  Call   $call
-     * @return void
-     */
-    public function updateLastCalledInfo(Call $call)
-    {
-        if (is_null($this->last_talked_to)) {
-            $this->last_talked_to = $call->called_at;
-        } else {
-            $this->last_talked_to = $this->last_talked_to->max($call->called_at);
-        }
-        
-        $this->save();
-    }
-    
-    /**
-=======
->>>>>>> monicahq
      * Set a relationship between two contacts.
      *
      * @param Contact $otherContact
@@ -1493,46 +1479,6 @@ class Contact extends Model
     }
     
     /**
-<<<<<<< HEAD
-     * Sets a tag to the contact.
-     *
-     * @param string $tag
-     * @return Tag
-     */
-    public function setTag(string $name)
-    {
-        $tag = $this->account->tags()->firstOrCreate([
-        'name' => $name,
-        ]);
-        
-        $tag->name_slug = str_slug($tag->name);
-        $tag->save();
-        $this->tags()->syncWithoutDetaching([$tag->id => ['account_id' => $this->account_id]]);
-
-        return $tag;
-    }
-    
-    /**
-     * Unset all the tags associated with the contact.
-     * @return bool
-     */
-    public function unsetTags()
-    {
-        $this->tags()->detach();
-    }
-    
-    /**
-     * Unset one tag associated with the contact.
-     * @return bool
-     */
-    public function unsetTag(Tag $tag)
-    {
-        $this->tags()->detach($tag->id);
-    }
-    
-    /**
-=======
->>>>>>> monicahq
      * Get the Relationship object representing the relation between two contacts.
      *
      * @param  Contact $otherContact
@@ -1548,7 +1494,7 @@ class Contact extends Model
     }
     
     /**
-     * Delete the contact and all the related object.
+     * Delete all related objects.
      *
      * @return bool
      */
@@ -1606,14 +1552,14 @@ class Contact extends Model
      */
     public function getRelatedRealContact()
     {
-        $relatedContact = Relationship::where('account_id', $this->account_id)
-            ->where('contact_is', $this->id)
-            ->first();
+        $account = $this;
 
-        if ($relatedContact) {
-            return self::where('account_id', $this->account_id)
-                ->find($relatedContact->of_contact);
-        }
+        return self::setEagerLoads([])->where('account_id', $this->account_id)
+            ->where('id', function ($query) use ($account) {
+                $query->select('of_contact')->from('relationships')->where('account_id', $account->account_id)
+                    ->where('contact_is', $account->id);
+            })
+            ->first();
     }
     
     /**
@@ -1706,5 +1652,16 @@ class Contact extends Model
     public function is_group()
     {
         return ($this->is_group_proxy === 1);
+    }
+
+    /**
+     * Get the weather information for this contact, based on the first address
+     * on the profile.
+     *
+     * @return void
+     */
+    public function getWeather()
+    {
+        return WeatherHelper::getWeatherForAddress($this->addresses()->first());
     }
 }

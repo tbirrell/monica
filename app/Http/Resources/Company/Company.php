@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Resources\Address;
+namespace App\Http\Resources\Company;
 
 use App\Helpers\DateHelper;
 use Illuminate\Http\Resources\Json\Resource;
-use App\Http\Resources\Country\Country as CountryResource;
+use App\Http\Resources\Contact\ContactShort as ContactShortResource;
 
-class AddressShort extends Resource
+class Company extends Resource
 {
     /**
      * Transform the resource into an array.
@@ -18,13 +18,14 @@ class AddressShort extends Resource
     {
         return [
             'id' => $this->id,
-            'object' => 'address',
+            'object' => 'company',
             'name' => $this->name,
-            'street' => $this->street,
-            'city' => $this->city,
-            'province' => $this->province,
-            'postal_code' => $this->postal_code,
-            'country' => new CountryResource($this->country),
+            'website' => $this->website,
+            'number_of_employees' => $this->number_of_employees,
+            'account' => [
+                'id' => $this->account->id,
+            ],
+            'contact' => new ContactShortResource($this->contact),
             'created_at' => DateHelper::getTimestamp($this->created_at),
             'updated_at' => DateHelper::getTimestamp($this->updated_at),
         ];

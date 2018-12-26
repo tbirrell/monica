@@ -46,8 +46,8 @@ class ScheduleReminders implements ShouldQueue
         }
 
         if (count($users) > 0) {
-            dump(NotificationFacade::send($users, new UserRemindedMail($this->reminder)));
+            NotificationFacade::send($users, new UserRemindedMail($this->reminder));
+            dispatch(new SetNextReminderDate($this->reminder));
         }
-        dispatch(new SetNextReminderDate($this->reminder));
     }
 }
