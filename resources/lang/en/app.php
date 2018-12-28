@@ -123,10 +123,10 @@ return [
     'relationship_type_group_work' => 'Work relationships',
     'relationship_type_group_other' => 'Other kind of relationships',
 
-    'relationship_type_partner' => 'significant other',
-    'relationship_type_partner_female' => 'significant other',
-    'relationship_type_partner_with_name' => ':name’s significant other',
-    'relationship_type_partner_female_with_name' => ':name’s significant other',
+    'relationship_type_partner' => 'boyfriend',
+    'relationship_type_partner_female' => 'girlfriend',
+    'relationship_type_partner_with_name' => ':name’s boyfriend',
+    'relationship_type_partner_female_with_name' => ':name’s girlfriend',
 
     'relationship_type_spouse' => 'spouse',
     'relationship_type_spouse_female' => 'spouse',
