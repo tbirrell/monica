@@ -1534,12 +1534,8 @@ class Contact extends Model
             return ! is_null($item->ofContact) &&
                    ! is_null($item->ofContact->birthday_special_date_id);
         });
-<<<<<<< HEAD
-        
-=======
 
         $reminders = collect();
->>>>>>> monicahq
         foreach ($relationships as $relationship) {
             $reminder = Reminder::where('account_id', $this->account_id)
                 ->find($relationship->ofContact->birthdate->reminder_id);
