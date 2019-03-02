@@ -158,7 +158,6 @@ class DateHelper
      * @param string $date
      * @param bool $atFaceValue
      * @return string
-     */
      * @return string
      */
     public static function getFullMonthAndDate($date, $atFaceValue = false) : string
