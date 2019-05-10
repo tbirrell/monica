@@ -13,6 +13,7 @@ use App\Helpers\WeatherHelper;
 use App\Models\Account\Account;
 use App\Models\Account\Weather;
 use App\Models\Account\Activity;
+use function Safe\preg_match_all;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use App\Models\Instance\SpecialDate;
@@ -23,7 +24,6 @@ use App\Models\Account\ActivityStatistic;
 use App\Models\Relationship\Relationship;
 use Illuminate\Database\Eloquent\Builder;
 use App\Models\ModelBindingHasher as Model;
-use App\Models\Relationship\RelationshipType;
 use App\Http\Resources\Tag\Tag as TagResource;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -859,8 +859,8 @@ class Contact extends Model
             
             $contacts->push([
             'relationship' => [
-            'id' => $relationship->id,
-            'name' => $relationship->relationship_type_name,
+                'id' => $relationship->id,
+                'name' => $relationship->relationshipType->name,
             ],
             'contact' => new ContactShortResource($contact),
             ]);
@@ -1253,6 +1253,7 @@ class Contact extends Model
     }
     
     /**
+<<<<<<< HEAD
      * Set a relationship between two contacts.
      *
      * @param Contact $otherContact
@@ -1329,6 +1330,8 @@ class Contact extends Model
     }
     
     /**
+=======
+>>>>>>> monicahq
      * Is this contact owed money?
      * @return bool
      */
@@ -1453,6 +1456,7 @@ class Contact extends Model
     }
     
     /**
+<<<<<<< HEAD
      * Get the Relationship object representing the relation between two contacts.
      *
      * @param  Contact $otherContact
@@ -1469,6 +1473,8 @@ class Contact extends Model
     }
     
     /**
+=======
+>>>>>>> monicahq
      * Delete all related objects.
      *
      * @return bool
@@ -1526,7 +1532,7 @@ class Contact extends Model
      * Gets the first contact related to this contact if the current contact is
      * partial.
      *
-     * @return self
+     * @return self|null
      */
     public function getRelatedRealContact()
     {
@@ -1550,7 +1556,12 @@ class Contact extends Model
      */
     public function getLink()
     {
-        return route('people.show', $this->is_partial ? $this->getRelatedRealContact() : $this);
+        $contact = $this->is_partial ? $this->getRelatedRealContact() : $this;
+        if (is_null($contact)) {
+            $contact = $this;
+        }
+
+        return route('people.show', $contact);
     }
 
     /**
