@@ -10,7 +10,7 @@
     <div class="breadcrumb">
       <div class="{{ Auth::user()->getFluidLayout() }}">
         <div class="row">
-          <div class="col-xs-12">
+          <div class="col-12">
             <ul class="horizontal">
               <li>
                 <a href="{{ route('dashboard.index') }}">{{ trans('app.breadcrumb_dashboard') }}</a>
@@ -40,7 +40,7 @@
       <div class="{{ Auth::user()->getFluidLayout() }}">
 
         <div class="row">
-          <div class="col-xs-12 col-sm-3 profile-sidebar">
+          <div class="col-12 col-sm-3 profile-sidebar">
 
             @if (! is_null($weather))
             <div class="ba b--near-white br2 bg-gray-monica pa3 mb3 f6">
@@ -68,7 +68,7 @@
                 <contact-archive hash="{{ $contact->hashID() }}" :active="{{ \Safe\json_encode($contact->is_active) }}"></contact-archive>
               </li>
               <li>
-                <a id="link-delete-contact" class="pointer" onclick="if (confirm('{{ trans('people.people_delete_confirmation') }}')) { $('#contact-delete-form').submit(); } return false;">{{ trans('people.people_delete_message') }}</a>
+                <a id="link-delete-contact" class="pointer" onclick="if (confirm('{{ trans('people.people_delete_confirmation') }}')) { $('#contact-delete-form').submit(); } return false;" href="">{{ trans('people.people_delete_message') }}</a>
                 <form method="POST" action="{{ route('people.destroy', $contact) }}" id="contact-delete-form" class="hidden">
                   {{ method_field('DELETE') }}
                   {{ csrf_field() }}
@@ -77,7 +77,12 @@
             </ul>
           </div>
 
+<<<<<<< HEAD
           <div class="col-xs-12 col-sm-9">
+=======
+          <div class="col-12 col-sm-9">
+
+>>>>>>> monicahq
             <div class="flex items-center justify-center flex-column">
               <div class='cf dib'>
                 <span @click="updateDefaultProfileView('life-events')" :class="[global_profile_default_view == 'life-events' ? 'f6 fl bb bt br bl ph3 pv2 dib b br2 br--left bl mb4 b--gray-monica' : 'f6 fl bb bt br ph3 pv2 dib bg-gray-monica br2 br--left bl pointer mb4 b--gray-monica']">
@@ -100,7 +105,7 @@
             <div v-if="global_profile_default_view == 'notes'">
               @if ($modules->contains('key', 'notes'))
               <div class="row section notes">
-                <div class="col-xs-12 section-title">
+                <div class="col-12 section-title">
                   <contact-note hash={{ $contact->hashID() }}></contact-note>
                 </div>
               </div>
