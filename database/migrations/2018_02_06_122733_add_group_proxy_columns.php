@@ -14,7 +14,7 @@ class AddGroupProxyColumns extends Migration
     public function up()
     {
         Schema::table('contacts', function (Blueprint $table) {
-            $table->tinyInteger('is_group_proxy', 1)->default(0);
+            $table->tinyInteger('is_group_proxy', 1)->nullable();
             $table->integer('group_id')->nullable();
         });
     }

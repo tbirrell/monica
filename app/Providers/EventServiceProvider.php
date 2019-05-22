@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
 class EventServiceProvider extends ServiceProvider
@@ -12,18 +13,20 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $listen = [
+        \Illuminate\Foundation\Events\LocaleUpdated::class => [
+            \App\Listeners\LocaleUpdated::class,
+        ],
+        \Illuminate\Auth\Events\Registered::class => [
+            \Illuminate\Auth\Listeners\SendEmailVerificationNotification::class,
+        ],
     ];
 
     /**
-     * Register any other events for your application.
+     * The subscriber classes to register.
      *
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $events
-     * @return void
+     * @var array
      */
-    public function boot()
-    {
-        parent::boot();
-
-        //
-    }
+    protected $subscribe = [
+        \App\Listeners\LoginListener::class,
+    ];
 }

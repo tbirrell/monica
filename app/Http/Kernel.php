@@ -15,6 +15,9 @@ class Kernel extends HttpKernel
      */
     protected $middleware = [
         \Illuminate\Foundation\Http\Middleware\CheckForMaintenanceMode::class,
+        \Illuminate\Foundation\Http\Middleware\TrimStrings::class,
+        \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
+        \Monicahq\Cloudflare\Http\Middleware\TrustProxies::class,
     ];
 
     /**
@@ -27,16 +30,35 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \Illuminate\Session\Middleware\StartSession::class,
+            'sentry.context',
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \App\Http\Middleware\CheckLocale::class,
+            'bindings',
+            'locale',
             \App\Http\Middleware\CheckVersion::class,
+            \App\Http\Middleware\CheckCompliance::class,
         ],
 
         'api' => [
             'throttle:60,1',
-            'bindings',
+            'sentry.context',
+            'locale',
+        ],
+
+        'oauth' => [
+            'throttle:5,1',
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            'sentry.context',
+            'locale',
+        ],
+
+        'mfa' => [
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            'webauthn',
+            'u2f',
+            '2fa',
         ],
     ];
 
@@ -48,14 +70,39 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $routeMiddleware = [
-        //'auth' => \App\Http\Middleware\Authenticate::class,
         'auth' => \Illuminate\Auth\Middleware\Authenticate::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
+        'auth.tokenonbasic' => \App\Http\Middleware\AuthenticateWithTokenOnBasicAuth::class,
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
-        //'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'throttle' => \App\Http\Middleware\ThrottleRequestsMiddleware::class,
         'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
         '2fa' => \PragmaRX\Google2FALaravel\Middleware::class,
+        'u2f' => \Lahaxearnaud\U2f\Http\Middleware\U2f::class,
+        'webauthn' => \LaravelWebauthn\Http\Middleware\WebauthnMiddleware::class,
+        'limitations' => \App\Http\Middleware\CheckAccountLimitations::class,
+        'locale' => \App\Http\Middleware\CheckLocale::class,
+        'sentry.context' => \App\Http\Middleware\SentryContext::class,
+        'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+        'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
+    ];
+
+    /**
+     * The priority-sorted list of middleware.
+     *
+     * This forces the listed middleware to always be in the given order.
+     *
+     * @var array
+     */
+    protected $middlewarePriority = [
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \App\Http\Middleware\Authenticate::class,
+        \App\Http\Middleware\AuthenticateWithTokenOnBasicAuth::class,
+        \Illuminate\Session\Middleware\AuthenticateSession::class,
+        \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        \Illuminate\Auth\Middleware\Authorize::class,
+        \App\Http\Middleware\CheckLocale::class,
     ];
 }

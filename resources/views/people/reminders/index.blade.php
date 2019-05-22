@@ -1,10 +1,10 @@
-<div class="col-xs-12 section-title">
-  <img src="/img/people/reminders.svg" class="icon-section icon-reminders">
+<div class="col-12 section-title">
+  <img src="img/people/reminders.svg" class="icon-section icon-reminders">
   <h3>
     {{ trans('people.section_personal_reminders') }}
 
-    <span class="fr">
-      <a href="/people/{{ $contact->id }}/reminders/add" class="btn">{{ trans('people.reminders_cta') }}</a>
+    <span class="{{ htmldir() == 'ltr' ? 'fr' : 'fl' }}">
+      <a href="{{ route('people.reminders.create', $contact) }}" class="btn">{{ trans('people.reminders_cta') }}</a>
     </span>
   </h3>
 </div>
@@ -12,16 +12,16 @@
 
 @if ($reminders->count() === 0)
 
-  <div class="col-xs-12">
+  <div class="col-12">
     <div class="section-blank">
       <h3>{{ trans('people.reminders_blank_title', ['name' => $contact->first_name]) }}</h3>
-      <a href="/people/{{ $contact->id }}/reminders/add">{{ trans('people.reminders_blank_add_activity') }}</a>
+      <a href="{{ route('people.reminders.create', $contact) }}">{{ trans('people.reminders_blank_add_activity') }}</a>
     </div>
   </div>
 
 @else
 
-  <div class="col-xs-12 reminders-list">
+  <div class="col-12 reminders-list">
 
     @if (! auth()->user()->account->hasLimitations())
     <p>{{ trans('people.reminders_description') }}</p>
@@ -34,7 +34,7 @@
       <li class="table-row">
 
         <div class="table-cell date">
-          {{ \App\Helpers\DateHelper::getShortDate($reminder->getNextExpectedDate()) }}
+          {{ $reminder->next_expected_date_human_readable }}
         </div>
 
         <div class="table-cell frequency-type">
@@ -57,7 +57,7 @@
 
         <div class="table-cell list-actions">
           {{-- Only display this if the reminder can be deleted - ie if it's not a reminder added automatically for birthdates --}}
-          @if (! $reminder->special_date_id)
+          @if ($reminder->delible)
               <a href="{{ route('people.reminders.edit', [$contact, $reminder]) }}" class="edit">
                 <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
               </a>
@@ -67,7 +67,7 @@
           @endif
         </div>
 
-        <form method="POST" action="/people/{{ $contact->id }}/reminders/{{ $reminder->id }}" class="entry-delete-form hidden">
+        <form method="POST" action="{{ route('people.reminders.destroy', [$contact, $reminder]) }}" class="entry-delete-form hidden">
           {{ method_field('DELETE') }}
           {{ csrf_field() }}
         </form>

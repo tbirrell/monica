@@ -2,35 +2,59 @@
 
 namespace App\Http\Controllers;
 
-use DB;
-use Auth;
-use App\Tag;
-use App\User;
-use App\ImportJob;
-use Carbon\Carbon;
-use App\Invitation;
+use App\Helpers\DBHelper;
+use App\Models\User\User;
+use App\Helpers\DateHelper;
+use App\Models\Contact\Tag;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use App\Helpers\LocaleHelper;
+use App\Helpers\RequestHelper;
 use App\Jobs\SendNewUserAlert;
+use App\Helpers\TimezoneHelper;
 use App\Jobs\ExportAccountAsSQL;
 use App\Jobs\AddContactFromVCard;
 use App\Jobs\SendInvitationEmail;
+use App\Models\Account\ImportJob;
+use App\Models\Account\Invitation;
+use App\Services\User\EmailChange;
+use Illuminate\Support\Facades\DB;
+use Lahaxearnaud\U2f\Models\U2fKey;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\ImportsRequest;
 use App\Http\Requests\SettingsRequest;
 use Illuminate\Support\Facades\Storage;
+use LaravelWebauthn\Models\WebauthnKey;
 use App\Http\Requests\InvitationRequest;
-use PragmaRX\Google2FALaravel\Support\Authenticator;
+use App\Services\Contact\Tag\DestroyTag;
+use App\Services\Account\DestroyAllDocuments;
+use PragmaRX\Google2FALaravel\Facade as Google2FA;
+use App\Http\Resources\Settings\U2fKey\U2fKey as U2fKeyResource;
+use App\Http\Resources\Settings\WebauthnKey\WebauthnKey as WebauthnKeyResource;
 
-class SettingsController extends Controller
+class SettingsController
 {
     protected $ignoredTables = [
         'accounts',
-        'activity_type_groups',
+        'activity_type_activities',
         'activity_types',
         'api_usage',
         'cache',
         'countries',
+        'crons',
         'currencies',
+        'contact_photo',
+        'default_activity_types',
+        'default_activity_type_categories',
         'default_contact_field_types',
+        'default_contact_modules',
+        'default_life_event_categories',
+        'default_life_event_types',
+        'default_relationship_type_groups',
+        'default_relationship_types',
+        'emotions',
+        'emotions_primary',
+        'emotions_secondary',
         'failed_jobs',
         'instances',
         'jobs',
@@ -45,42 +69,80 @@ class SettingsController extends Controller
         'sessions',
         'statistics',
         'subscriptions',
+        'telescope_entries',
+        'telescope_entries_tags',
+        'telescope_monitoring',
+        'terms',
+        'u2f_key',
         'users',
+        'webauthn_keys',
     ];
 
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\View\View
      */
     public function index()
     {
-        return view('settings.index');
+        // names order
+        $namesOrder = [
+            'firstname_lastname',
+            'lastname_firstname',
+            'firstname_lastname_nickname',
+            'firstname_nickname_lastname',
+            'lastname_firstname_nickname',
+            'lastname_nickname_firstname',
+            'nickname',
+        ];
+
+        return view('settings.index')
+                ->withNamesOrder($namesOrder)
+                ->withLocales(LocaleHelper::getLocaleList())
+                ->withHours(DateHelper::getListOfHours())
+                ->withSelectedTimezone(TimezoneHelper::adjustEquivalentTimezone(DateHelper::getTimezone()))
+                ->withTimezones(collect(TimezoneHelper::getListOfTimezones())->map(function ($timezone) {
+                    return ['id' => $timezone['timezone'], 'name'=>$timezone['name']];
+                }));
     }
 
     /**
      * Save user settings.
      *
      * @param SettingsRequest $request
-     * @return \Illuminate\Http\Response
+     *
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function save(SettingsRequest $request)
     {
-        $request->user()->update(
+        $user = $request->user();
+
+        $user->update(
             $request->only([
                 'first_name',
                 'last_name',
-                'email',
                 'timezone',
                 'locale',
                 'currency_id',
                 'name_order',
             ]) + [
                 'fluid_container' => $request->get('layout'),
+                'temperature_scale' => $request->get('temperature_scale'),
             ]
         );
 
-        return redirect('settings')
+        if ($user->email != $request->get('email')) {
+            app(EmailChange::class)->execute([
+                'account_id' => $user->account_id,
+                'email' => $request->get('email'),
+                'user_id' => $user->id,
+            ]);
+        }
+
+        $user->account->default_time_reminder_is_sent = $request->get('reminder_time');
+        $user->account->save();
+
+        return redirect()->route('settings.index')
             ->with('status', trans('settings.settings_success', [], $request['locale']));
     }
 
@@ -88,14 +150,19 @@ class SettingsController extends Controller
      * Delete user account.
      *
      * @param Request $request
-     * @return \Illuminate\Http\Response
+     *
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function delete(Request $request)
     {
         $user = $request->user();
         $account = $user->account;
 
-        $tables = DB::select('SELECT table_name FROM information_schema.tables WHERE table_schema="monica"');
+        app(DestroyAllDocuments::class)->execute([
+            'account_id' => $account->id,
+        ]);
+
+        $tables = DBHelper::getTables();
 
         // Looping over the tables
         foreach ($tables as $table) {
@@ -108,31 +175,39 @@ class SettingsController extends Controller
             DB::table($tableName)->where('account_id', $account->id)->delete();
         }
 
-        DB::table('accounts')->where('id', $account->id)->delete();
+        $account = auth()->user()->account;
 
-        if (auth()->user()->account->subscribed(config('monica.paid_plan_friendly_name'))) {
-            auth()->user()->account->subscription(config('monica.paid_plan_friendly_name'))->cancelNow();
+        if ($account->isSubscribed() && ! $account->has_access_to_paid_version_for_free) {
+            $account->subscriptionCancel();
         }
 
+        DB::table('accounts')->where('id', $account->id)->delete();
         auth()->logout();
-        $user->forceDelete();
+        $user->delete();
 
-        return redirect('/');
+        return redirect()->route('login');
     }
 
     /**
      * Reset user account.
      *
      * @param Request $request
-     * @return \Illuminate\Http\Response
+     *
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function reset(Request $request)
     {
         $user = $request->user();
         $account = $user->account;
 
-        $tables = DB::select('SELECT table_name FROM information_schema.tables WHERE table_schema="monica"');
+        app(DestroyAllDocuments::class)->execute([
+            'account_id' => $account->id,
+        ]);
 
+        $tables = DBHelper::getTables();
+
+        // TODO(tom@tomrochette.com): We cannot simply iterate over tables to reset an account
+        // as this will not work with foreign key constraints
         // Looping over the tables
         foreach ($tables as $table) {
             $tableName = $table->table_name;
@@ -144,14 +219,16 @@ class SettingsController extends Controller
             DB::table($tableName)->where('account_id', $account->id)->delete();
         }
 
-        return redirect('/settings')
+        $account->populateDefaultFields();
+
+        return redirect()->route('settings.index')
                     ->with('status', trans('settings.reset_success'));
     }
 
     /**
      * Display the export view.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\View\View|\Illuminate\Contracts\View\Factory
      */
     public function export()
     {
@@ -161,21 +238,27 @@ class SettingsController extends Controller
     /**
      * Exports the data of the account in SQL format.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\Response|null
      */
     public function exportToSql()
     {
-        $path = $this->dispatchNow(new ExportAccountAsSQL());
+        $path = dispatch_now(new ExportAccountAsSQL());
 
-        return response()
-            ->download(Storage::disk('public')->getDriver()->getAdapter()->getPathPrefix().$path, 'monica.sql')
-            ->deleteFileAfterSend(true);
+        $driver = Storage::disk(ExportAccountAsSQL::STORAGE)->getDriver();
+        if ($driver instanceof \League\Flysystem\Filesystem) {
+            $adapter = $driver->getAdapter();
+            if ($adapter instanceof \League\Flysystem\Adapter\AbstractAdapter) {
+                return response()
+                    ->download($adapter->getPathPrefix().$path, 'monica.sql')
+                    ->deleteFileAfterSend(true);
+            }
+        }
     }
 
     /**
      * Display the import view.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\View\View|\Illuminate\Contracts\View\Factory
      */
     public function import()
     {
@@ -189,12 +272,12 @@ class SettingsController extends Controller
     /**
      * Display the Import people's view.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\View\View|\Illuminate\Contracts\View\Factory|\Illuminate\Http\RedirectResponse
      */
     public function upload()
     {
         if (config('monica.requires_subscription') && ! auth()->user()->account->isSubscribed()) {
-            return redirect('/settings/subscriptions');
+            return redirect()->route('settings.subscriptions.index');
         }
 
         return view('settings.imports.upload');
@@ -210,7 +293,7 @@ class SettingsController extends Controller
             'filename' => $filename,
         ]);
 
-        dispatch(new AddContactFromVCard($importJob));
+        dispatch(new AddContactFromVCard($importJob, $request->get('behaviour')));
 
         return redirect()->route('settings.import');
     }
@@ -218,15 +301,12 @@ class SettingsController extends Controller
     /**
      * Display the import report view.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\View\View|\Illuminate\Contracts\View\Factory
      */
     public function report($importJobId)
     {
-        $importJob = ImportJob::findOrFail($importJobId);
-
-        if ($importJob->account_id != auth()->user()->account->id) {
-            return redirect()->route('settings.index');
-        }
+        $importJob = ImportJob::where('account_id', auth()->user()->account_id)
+            ->findOrFail($importJobId);
 
         return view('settings.imports.report', compact('importJob'));
     }
@@ -234,7 +314,7 @@ class SettingsController extends Controller
     /**
      * Display the users view.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\View\View|\Illuminate\Contracts\View\Factory
      */
     public function users()
     {
@@ -250,12 +330,12 @@ class SettingsController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\View\View|\Illuminate\Contracts\View\Factory|\Illuminate\Http\RedirectResponse
      */
     public function addUser()
     {
         if (config('monica.requires_subscription') && ! auth()->user()->account->isSubscribed()) {
-            return redirect('/settings/subscriptions');
+            return redirect()->route('settings.subscriptions.index');
         }
 
         return view('settings.users.add');
@@ -265,7 +345,8 @@ class SettingsController extends Controller
      * Store a newly created resource in storage.
      *
      * @param InvitationRequest $request
-     * @return \Illuminate\Http\Response
+     *
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function inviteUser(InvitationRequest $request)
     {
@@ -293,7 +374,7 @@ class SettingsController extends Controller
             + [
                 'invited_by_user_id' => auth()->user()->id,
                 'account_id' => auth()->user()->account_id,
-                'invitation_key' => str_random(100),
+                'invitation_key' => Str::random(100),
             ]
         );
 
@@ -303,7 +384,7 @@ class SettingsController extends Controller
             'number_of_invitations_sent' => auth()->user()->account->number_of_invitations_sent + 1,
         ]);
 
-        return redirect('settings/users')
+        return redirect()->route('settings.users.index')
             ->with('status', trans('settings.settings_success'));
     }
 
@@ -311,13 +392,14 @@ class SettingsController extends Controller
      * Remove the specified resource from storage.
      *
      * @param Invitation $invitation
-     * @return \Illuminate\Http\Response
+     *
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function destroyInvitation(Invitation $invitation)
     {
         $invitation->delete();
 
-        return redirect('/settings/users')
+        return redirect()->route('settings.users.index')
             ->with('success', trans('settings.users_invitation_deleted_confirmation_message'));
     }
 
@@ -325,16 +407,17 @@ class SettingsController extends Controller
      * Display the specified resource.
      *
      * @param string $key
-     * @return \Illuminate\Http\Response
+     *
+     * @return \Illuminate\View\View|\Illuminate\Contracts\View\Factory|\Illuminate\Http\RedirectResponse
      */
     public function acceptInvitation($key)
     {
         if (Auth::check()) {
-            return redirect('/');
+            return redirect()->route('login');
         }
 
-        $invitation = Invitation::where('invitation_key', $key)
-                                ->firstOrFail();
+        Invitation::where('invitation_key', $key)
+            ->firstOrFail();
 
         return view('settings.users.accept', compact('key'));
     }
@@ -344,7 +427,8 @@ class SettingsController extends Controller
      *
      * @param Request $request
      * @param string $key
-     * @return \Illuminate\Http\Response
+     *
+     * @return null|\Illuminate\Http\RedirectResponse
      */
     public function storeAcceptedInvitation(Request $request, $key)
     {
@@ -357,14 +441,14 @@ class SettingsController extends Controller
             return redirect()->back()->withErrors(trans('settings.users_error_email_not_similar'))->withInput();
         }
 
-        $user = new User;
-        $user->first_name = $request->input('first_name');
-        $user->last_name = $request->input('last_name');
-        $user->email = $request->input('email');
-        $user->password = bcrypt($request->input('password'));
-        $user->timezone = config('app.timezone');
-        $user->created_at = Carbon::now();
-        $user->account_id = $invitation->account_id;
+        $user = User::createDefault($invitation->account_id,
+                    $request->input('first_name'),
+                    $request->input('last_name'),
+                    $request->input('email'),
+                    $request->input('password'),
+                    RequestHelper::ip()
+                );
+        $user->invited_by_user_id = $invitation->invited_by_user_id;
         $user->save();
 
         $invitation->delete();
@@ -373,33 +457,30 @@ class SettingsController extends Controller
         dispatch(new SendNewUserAlert($user));
 
         if (Auth::attempt(['email' => $user->email, 'password' => $request->input('password')])) {
-            return redirect('dashboard');
+            return redirect()->route('dashboard.index');
         }
     }
 
     /**
      * Delete additional user account.
      *
-     * @param Request $request
-     * @return \Illuminate\Http\Response
+     * @param int $userID
+     *
+     * @return \Illuminate\Http\RedirectResponse
      */
-    public function deleteAdditionalUser(Request $request, $userID)
+    public function deleteAdditionalUser($userID)
     {
-        $user = User::find($userID);
-
-        if ($user->account_id != auth()->user()->account_id) {
-            return redirect('/');
-        }
+        $user = User::where('account_id', auth()->user()->account_id)
+            ->findOrFail($userID);
 
         // make sure you don't delete yourself from this screen
         if ($user->id == auth()->user()->id) {
-            return redirect('/');
+            return redirect()->route('login');
         }
 
-        $user = User::find($userID);
         $user->delete();
 
-        return redirect('/settings/users')
+        return redirect()->route('settings.users.index')
                 ->with('success', trans('settings.users_list_delete_success'));
     }
 
@@ -411,19 +492,21 @@ class SettingsController extends Controller
         return view('settings.tags');
     }
 
-    public function deleteTag(Request $request, $tagId)
+    /**
+     * Destroy the tag.
+     *
+     * @param int $tagId
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function deleteTag($tagId)
     {
-        $tag = Tag::findOrFail($tagId);
+        app(DestroyTag::class)->execute([
+            'tag_id' => $tagId,
+            'account_id' => auth()->user()->account->id,
+        ]);
 
-        if ($tag->account_id != auth()->user()->account_id) {
-            return redirect('/');
-        }
-
-        $tag->contacts()->detach();
-
-        $tag->delete();
-
-        return redirect('/settings/tags')
+        return redirect()->route('settings.tags.index')
                 ->with('success', trans('settings.tags_list_delete_success'));
     }
 
@@ -432,8 +515,57 @@ class SettingsController extends Controller
         return view('settings.api.index');
     }
 
-    public function security(Request $request)
+    public function dav()
     {
-        return view('settings.security.index', ['is2FAActivated' => (new Authenticator($request))->isActivated()]);
+        $davroute = route('sabre.dav');
+        $email = auth()->user()->email;
+
+        return view('settings.dav.index')
+                ->withDavRoute($davroute)
+                ->withCardDavRoute("{$davroute}/addressbooks/{$email}/contacts")
+                ->withCalDavBirthdaysRoute("{$davroute}/calendars/{$email}/birthdays")
+                ->withCalDavTasksRoute("{$davroute}/calendars/{$email}/tasks");
+    }
+
+    public function security()
+    {
+        $u2fKeys = U2fKey::where('user_id', auth()->id())
+                        ->get();
+
+        $webauthnKeys = WebauthnKey::where('user_id', auth()->id())->get();
+
+        return view('settings.security.index')
+            ->with('is2FAActivated', Google2FA::isActivated())
+            ->with('currentkeys', U2fKeyResource::collection($u2fKeys))
+            ->withWebauthnKeys(WebauthnKeyResource::collection($webauthnKeys));
+    }
+
+    /**
+     * Update the default view when viewing a contact.
+     * The default view can be either the life events feed or the general data
+     * about the contact (notes, reminders, ...).
+     * Possible values: life-events | notes.
+     *
+     * @param  Request $request
+     * @return string
+     */
+    public function updateDefaultProfileView(Request $request)
+    {
+        $allowedValues = ['life-events', 'notes', 'photos'];
+        $view = $request->get('name');
+
+        if (! in_array($view, $allowedValues)) {
+            return 'not allowed';
+        }
+
+        auth()->user()->profile_active_tab = $view;
+
+        if ($view == 'life-events') {
+            auth()->user()->profile_new_life_event_badge_seen = true;
+        }
+
+        auth()->user()->save();
+
+        return $view;
     }
 }

@@ -22,3 +22,4 @@ php-extensions-*.tar.bz2
 monicadump.sql
 .scannerwork/
 .sentry-release
+.phpunit.result.cache

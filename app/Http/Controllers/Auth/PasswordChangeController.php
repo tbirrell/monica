@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers\Auth;
 
-use Auth;
+use App\Models\User\User;
 use Illuminate\Support\Str;
-use UnexpectedValueException;
 use App\Http\Requests\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use App\Http\Requests\PasswordChangeRequest;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Auth\RedirectsUsers;
-use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
+use Illuminate\Contracts\Auth\CanResetPassword;
 
 class PasswordChangeController extends Controller
 {
@@ -20,7 +21,7 @@ class PasswordChangeController extends Controller
     protected $redirectTo = '/settings/security';
 
     /**
-     * Get usefull parameters from request.
+     * Get useful parameters from request.
      *
      * @param \App\Http\Requests\PasswordChangeRequest $request
      * @return array
@@ -52,16 +53,19 @@ class PasswordChangeController extends Controller
      * Validate a password change request and update password of the user.
      *
      * @param array $credentials
-     * @return string
+     *
+     * @return string|Authenticatable
      */
     protected function validateAndPasswordChange($credentials)
     {
         $user = $this->validateChange($credentials);
-        if (! $user instanceof CanResetPasswordContract) {
+        if (! $user instanceof CanResetPassword) {
             return $user;
         }
 
-        $this->setNewPassword($user, $credentials['password']);
+        if ($user instanceof Authenticatable) {
+            $this->setNewPassword($user, $credentials['password']);
+        }
 
         return 'passwords.changed';
     }
@@ -70,7 +74,8 @@ class PasswordChangeController extends Controller
      * Validate a password change request with the given credentials.
      *
      * @param array $credentials
-     * @return \Illuminate\Contracts\Auth\CanResetPassword|string
+     *
+     * @return string|Authenticatable
      *
      * @throws \UnexpectedValueException
      */
@@ -84,10 +89,6 @@ class PasswordChangeController extends Controller
             return 'passwords.password';
         }
 
-        if ($user && ! $user instanceof CanResetPasswordContract) {
-            throw new UnexpectedValueException('User must implement CanResetPassword interface.');
-        }
-
         return $user;
     }
 
@@ -95,14 +96,18 @@ class PasswordChangeController extends Controller
      * Get the user with the given credentials.
      *
      * @param array $credentials
-     * @return \Illuminate\Contracts\Auth\CanResetPassword|null
+     *
+     * @return null|Authenticatable
      */
     protected function getUser(array $credentials)
     {
         $user = Auth::user();
 
         // Using current email from user, and current password sent with the request to authenticate the user
-        if (! Auth::attempt(['email' => $user->email, 'password' => $credentials['password_current']])) {
+        if (! Auth::attempt([
+                'email' => $user->getEmailForPasswordReset(),
+                'password' => $credentials['password_current'],
+            ])) {
             // authentication fails
             return;
         }
@@ -111,7 +116,7 @@ class PasswordChangeController extends Controller
     }
 
     /**
-     * Set the new password if all validations have passed.
+     * Set the new password if all validation has passed.
      *
      * @param User $user
      * @param string $password
@@ -129,7 +134,7 @@ class PasswordChangeController extends Controller
     }
 
     /**
-     * Get the response for a successful password changed.
+     * Get the response for a successful password change.
      *
      * @param string $response
      * @return \Illuminate\Http\Response
@@ -141,7 +146,7 @@ class PasswordChangeController extends Controller
     }
 
     /**
-     * Get the response for a failed password changed.
+     * Get the response for a failed password change.
      *
      * @param string $response
      * @return \Illuminate\Http\Response

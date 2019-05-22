@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Contacts;
 
-use App\Debt;
-use App\Contact;
+use App\Models\Contact\Debt;
+use App\Helpers\AvatarHelper;
+use App\Models\Contact\Contact;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\People\DebtRequest;
 
@@ -13,7 +14,8 @@ class DebtController extends Controller
      * Display a listing of the resource.
      *
      * @param Contact $contact
-     * @return \Illuminate\Http\Response
+     *
+     * @return \Illuminate\View\View
      */
     public function index(Contact $contact)
     {
@@ -25,12 +27,14 @@ class DebtController extends Controller
      * Show the form for creating a new resource.
      *
      * @param Contact $contact
-     * @return \Illuminate\Http\Response
+     *
+     * @return \Illuminate\View\View
      */
     public function create(Contact $contact)
     {
         return view('people.debt.add')
             ->withContact($contact)
+            ->withAvatar(AvatarHelper::get($contact, 87))
             ->withDebt(new Debt);
     }
 
@@ -39,11 +43,12 @@ class DebtController extends Controller
      *
      * @param DebtRequest $request
      * @param Contact $contact
-     * @return \Illuminate\Http\Response
+     *
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function store(DebtRequest $request, Contact $contact)
     {
-        $debt = $contact->debts()->create(
+        $contact->debts()->create(
             $request->only([
                 'in_debt',
                 'amount',
@@ -55,9 +60,7 @@ class DebtController extends Controller
             ]
         );
 
-        $contact->logEvent('debt', $debt->id, 'create');
-
-        return redirect('/people/'.$contact->id)
+        return redirect()->route('people.show', $contact)
             ->with('success', trans('people.debt_add_success'));
     }
 
@@ -66,9 +69,10 @@ class DebtController extends Controller
      *
      * @param Contact $contact
      * @param Debt $debt
-     * @return \Illuminate\Http\Response
+     *
+     * @return void
      */
-    public function show(Contact $contact, Debt $debt)
+    public function show(Contact $contact, Debt $debt): void
     {
         //
     }
@@ -78,12 +82,14 @@ class DebtController extends Controller
      *
      * @param Contact $contact
      * @param Debt $debt
-     * @return \Illuminate\Http\Response
+     *
+     * @return \Illuminate\View\View
      */
     public function edit(Contact $contact, Debt $debt)
     {
         return view('people.debt.edit')
             ->withContact($contact)
+            ->withAvatar(AvatarHelper::get($contact, 87))
             ->withDebt($debt);
     }
 
@@ -93,7 +99,8 @@ class DebtController extends Controller
      * @param DebtRequest $request
      * @param Contact $contact
      * @param Debt $debt
-     * @return \Illuminate\Http\Response
+     *
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function update(DebtRequest $request, Contact $contact, Debt $debt)
     {
@@ -109,9 +116,7 @@ class DebtController extends Controller
             ]
         );
 
-        $contact->logEvent('debt', $debt->id, 'update');
-
-        return redirect('/people/'.$contact->id)
+        return redirect()->route('people.show', $contact)
             ->with('success', trans('people.debt_edit_success'));
     }
 
@@ -120,15 +125,14 @@ class DebtController extends Controller
      *
      * @param Contact $contact
      * @param Debt $debt
-     * @return \Illuminate\Http\Response
+     *
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(Contact $contact, Debt $debt)
     {
         $debt->delete();
 
-        $contact->events()->forObject($debt)->get()->each->delete();
-
-        return redirect('/people/'.$contact->id)
+        return redirect()->route('people.show', $contact)
             ->with('success', trans('people.debt_delete_success'));
     }
 }

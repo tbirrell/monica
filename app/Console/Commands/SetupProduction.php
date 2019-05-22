@@ -2,7 +2,8 @@
 
 namespace App\Console\Commands;
 
-use DB;
+use function Safe\touch;
+use App\Models\Account\Account;
 use Illuminate\Console\Command;
 
 class SetupProduction extends Command
@@ -12,7 +13,11 @@ class SetupProduction extends Command
      *
      * @var string
      */
-    protected $signature = 'setup:production {--force}';
+    protected $signature = 'setup:production
+                            {--force : Force the operation to run when in production.}
+                            {--email= : Login email for the first account.}
+                            {--password= : Password to set for the first account.}
+                            {--skipSeed : Skip the populate database process.}';
 
     /**
      * The console command description.
@@ -22,21 +27,13 @@ class SetupProduction extends Command
     protected $description = 'Perform setup of Monica.';
 
     /**
-     * Create a new command instance.
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    /**
      * Execute the console command.
      *
      * @return mixed
      */
     public function handle()
     {
-        if (! $this->confirm('You are about to setup and configure Monica. Do you wish to continue?')) {
+        if ((! $this->option('force')) && (! $this->confirm('You are about to setup and configure Monica. Do you wish to continue?'))) {
             return;
         }
 
@@ -44,40 +41,16 @@ class SetupProduction extends Command
          * If the .env file does not exist, then key generation
          * will fail. So we create one if it does not already exist.
          */
-        if (! file_exists('.env')) {
-            touch('.env');
+        if (! file_exists(__DIR__.'/../../../.env')) {
+            touch(__DIR__.'/../../../.env');
         }
 
-        $this->callSilent('migrate', ['--force' => true]);
-        $this->info('✓ Performed migrations');
+        $this->call('monica:update', ['--force' => true]);
 
-        $this->call('db:seed', ['--class' => 'ActivityTypesTableSeeder', '--force' => true]);
-        $this->info('✓ Filled the Activity Types table');
-
-        $this->call('db:seed', ['--class' => 'CountriesSeederTable', '--force' => true]);
-        $this->info('✓ Filled the Countries table');
-
-        $this->callSilent('storage:link');
-        $this->info('✓ Symlinked the storage folder for the avatars');
-
-        $email = $this->ask('Account creation: what should be your email address to login?');
-        $password = $this->secret('Please choose a password:');
-
-        // populate account table
-        $accountID = DB::table('accounts')->insertGetId([
-            'api_key' => str_random(30),
-        ]);
-
-        // populate user table
-        $userId = DB::table('users')->insertGetId([
-            'account_id' => $accountID,
-            'first_name' => 'John',
-            'last_name' => 'Doe',
-            'email' => $email,
-            'password' => bcrypt($password),
-            'timezone' => config('app.timezone'),
-            'remember_token' => str_random(10),
-        ]);
+        if (! $this->option('skipSeed')) {
+            $this->line('✓ Filling database');
+            $this->call('db:seed', ['--force' => true]);
+        }
 
         $this->line('');
         $this->line('-----------------------------');
@@ -85,9 +58,21 @@ class SetupProduction extends Command
         $this->line('| Welcome to Monica v'.config('monica.app_version'));
         $this->line('|');
         $this->line('-----------------------------');
-        $this->info('| You can now sign in to your account:');
-        $this->line('| username: '.$email);
-        $this->line('| password: <hidden>');
+
+        $email = $this->option('email');
+        $password = $this->option('password');
+        if (! empty($email) && ! empty($password)) {
+            Account::createDefault('John', 'Doe', $email, $password);
+
+            $this->info('| You can now sign in to your account:');
+            $this->line('| username: '.$email);
+            $this->line('| password: <hidden>');
+        } elseif (Account::hasAny()) {
+            $this->info('| You can now log in to your account');
+        } else {
+            $this->info('| You can now register to the first account by opening the application:');
+        }
+
         $this->line('| URL:      '.config('app.url'));
         $this->line('-----------------------------');
 

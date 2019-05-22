@@ -2,7 +2,7 @@
 
 namespace App\Mail;
 
-use App\User;
+use App\Models\User\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
@@ -26,7 +26,7 @@ class NewUserAlert extends Mailable
     /**
      * Build the message.
      *
-     * @return $this
+     * @return self
      */
     public function build()
     {

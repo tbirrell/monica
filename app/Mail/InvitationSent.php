@@ -2,9 +2,9 @@
 
 namespace App\Mail;
 
-use App\Invitation;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use App\Models\Account\Invitation;
 use Illuminate\Queue\SerializesModels;
 
 class InvitationSent extends Mailable
@@ -26,7 +26,7 @@ class InvitationSent extends Mailable
     /**
      * Build the message.
      *
-     * @return $this
+     * @return self
      */
     public function build()
     {

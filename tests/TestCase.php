@@ -2,41 +2,60 @@
 
 namespace Tests;
 
-use Faker\Factory;
+use Illuminate\Foundation\Testing\TestResponse;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {
     use CreatesApplication;
 
-    public $faker;
-
     /**
-     * TestCase constructor.
+     * Call protected/private method of a class.
+     *
+     * @param  object &$object
+     * @param  string $methodName
+     * @param  array  $parameters
+     * @return mixed
      */
-    public function __construct($name = null, array $data = [], $dataName = '')
+    public function invokePrivateMethod(&$object, $methodName, array $parameters = [])
     {
-        parent::__construct($name, $data, $dataName);
+        $reflection = new \ReflectionClass(get_class($object));
+        $method = $reflection->getMethod($methodName);
+        $method->setAccessible(true);
 
-        // Makes a Faker Factory available to all tests.
-        $this->faker = Factory::create();
+        return $method->invokeArgs($object, $parameters);
     }
 
     /**
-     * Create a user and sign in as that user. If a user
-     * object is passed, then sign in as that user.
+     * Set protected/private property of a class.
      *
-     * @param null $user
-     * @return mixed
+     * @param  object &$object
+     * @param  string $propertyName
+     * @param  mixed  $value
+     * @return void
      */
-    public function signIn($user = null)
+    public function setPrivateValue(&$object, string $propertyName, $value)
     {
-        if (is_null($user)) {
-            $user = factory('App\User')->create();
-        }
+        $reflection = new \ReflectionClass(get_class($object));
+        $property = $reflection->getProperty($propertyName);
+        $property->setAccessible(true);
 
-        $this->be($user);
+        $property->setValue($object, $value);
+    }
 
-        return $user;
+    /**
+     * Test that the response contains an ObjectDeleted response.
+     *
+     * @param TestResponse $response
+     * @param int $id
+     */
+    public function expectObjectDeleted(TestResponse $response, int $id)
+    {
+        $response->assertStatus(200);
+
+        $response->assertJson([
+            'deleted' => true,
+            'id' => $id,
+        ]);
     }
 }

@@ -2,14 +2,16 @@
 
 namespace App\Http\Resources\Activity;
 
+use App\Helpers\DateHelper;
 use Illuminate\Http\Resources\Json\Resource;
+use App\Http\Resources\Activity\ActivityTypeCategory as ActivityTypeCategoryResource;
 
 class ActivityType extends Resource
 {
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request
+     * @param  \Illuminate\Http\Request $request
      * @return array
      */
     public function toArray($request)
@@ -17,11 +19,14 @@ class ActivityType extends Resource
         return [
             'id' => $this->id,
             'object' => 'activityType',
-            'type' => $this->key,
-            'group' => $this->group->key,
+            'name' => $this->name,
             'location_type' => $this->location_type,
-            'created_at' => $this->created_at->format(config('api.timestamp_format')),
-            'updated_at' => (is_null($this->updated_at) ? null : $this->updated_at->format(config('api.timestamp_format'))),
+            'activity_type_category' => new ActivityTypeCategoryResource($this->category),
+            'account' => [
+                'id' => $this->account->id,
+            ],
+            'created_at' => DateHelper::getTimestamp($this->created_at),
+            'updated_at' => DateHelper::getTimestamp($this->updated_at),
         ];
     }
 }

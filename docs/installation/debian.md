@@ -1,249 +1,207 @@
-# Running it on Debian Stretch
+# Installing Monica on Debian
 
-#### 1. Install the required packages:
+<img alt="Logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Debian-OpenLogo.svg/109px-Debian-OpenLogo.svg.png" width="96" height="127" />
 
-```
-sudo apt install apache2 mariadb-server php7.0 php7.0-mysql php7.0-xml \
-    php7.0-intl php7.0-mbstring git curl
-```
+Monica can run on Debian Stretch.
 
-#### 2. Clone the repository
+## Prerequisites
 
-```
-sudo git clone https://github.com/monicahq/monica.git /var/www/monica
-```
+Monica depends on the following:
 
-#### 3. Change permissions on the new folder
+* A Web server, like [Apache httpd webserver](https://httpd.apache.org/) 
+* [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+* PHP 7.2+
+* [Composer](https://getcomposer.org/)
+* MySQL / MariaDB
 
-```
-sudo chown -R www-data:www-data /var/www/monica
-```
 
-#### 4. Install nodejs (this is needed for npm)
+**Utils:** Intall these required utilities software:
 
+```sh
+sudo apt update
+sudo apt install -y curl unzip
 ```
-curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
-```
-```
-sudo apt-get install -y nodejs
-```
+An editor like vim or nano should be useful too.
 
-#### 5. Install composer
+**Apache:** Install Apache with:
 
-Download and install the binary by following the [Command-line installation of composer](https://getcomposer.org/download/).
-
-Move it to the bin directory.
-```
-sudo mv composer.phar /usr/local/bin/composer
+```sh
+sudo apt update
+sudo apt install -y apache2
 ```
 
-#### 6. Setup the database
+**Git:** Install Git with:
 
-First we're making the database a bit more secure.
+```sh
+sudo apt update
+sudo apt install -y git
 ```
+
+**PHP 7.2+:** 
+
+If it's not alread done, add php repository:
+```sh
+sudo apt install -y gnupg2 apt-transport-https apt-transport-https lsb-release ca-certificates
+sudo curl -s https://packages.sury.org/php/apt.gpg -o /etc/apt/trusted.gpg.d/php.gpg 
+echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/php.list
+```
+
+Install php 7.2 with these extensions:
+
+```sh
+sudo apt update
+sudo apt install -y php7.2 php7.2-cli php7.2-common php7.2-fpm \
+    php7.2-json php7.2-opcache php7.2-mysql php7.2-mbstring php7.2-zip \
+    php7.2-bcmath php7.2-intl php7.2-xml php7.2-curl php7.2-gd php7.2-gmp
+```
+
+**Composer:** After you're done installing PHP, you'll need the [Composer](https://getcomposer.org/download/) dependency manager.
+
+```sh
+cd /tmp
+curl -s https://getcomposer.org/installer -o composer-setup.php
+sudo php composer-setup.php --install-dir=/usr/local/bin/ --filename=composer
+rm -f composer-setup.php
+```
+(or you can follow instruction on [getcomposer.org](https://getcomposer.org/download/) page)
+
+**MariaDB:** Install MariaDB. Note that this only installs the package, but does not setup Mysql. This is done later in the instructions:
+
+```sh
+sudo apt update
+sudo apt install -y mariadb-server
+```
+
+## Installation steps
+
+Once the softwares above are installed:
+
+### 1. Clone the repository
+
+You may install Monica by simply cloning the repository. Consider cloning the repository into any folder, example here in `/var/www/monica` directory:
+```sh
+cd /var/www/
+sudo git clone https://github.com/monicahq/monica.git
+```
+
+You should check out a tagged version of Monica since `master` branch may not always be stable.
+Find the latest official version on the [release page](https://github.com/monicahq/monica/releases)
+```sh
+cd /var/www/monica
+# Clone the desired version
+sudo git checkout tags/v1.6.2
+```
+
+### 2. Setup the database
+
+First make the database a bit more secure.
+```sh
 sudo mysql_secure_installation
 ```
 
 Next log in with the root account to configure the database.
-```
+```sh
 sudo mysql -uroot -p
 ```
 
-This command creates a database called monicadb
-```
-create database monicadb;
+Create a database called 'monica'.
+```sql
+CREATE DATABASE monica;
 ```
 
-while this commands creates a database user called monica and its
-password 'strongpassword'.
-
-```
+Create a user called 'monica' and its password 'strongpassword'.
+```sql
 CREATE USER 'monica'@'localhost' IDENTIFIED BY 'strongpassword';
 ```
 
-We have to authorize the new user on the monicadb so that he is allowed to
-change the database.
-
-```
-GRANT ALL ON monicadb.* TO 'monica'@'localhost';
+We have to authorize the new user on the `monica` db so that he is allowed to change the database.
+```sql
+GRANT ALL ON monica.* TO 'monica'@'localhost';
 ```
 
 And finally we apply the changes and exit the database.
-```
+```sql
 FLUSH PRIVILEGES;
 exit
 ```
 
-#### 7. Configure Monica
+### 3. Configure Monica
 
-Run `composer install` in the folder the repository has been cloned to. Which in our case would be /var/www/monica.
+`cd /var/www/monica` then run these steps with `sudo`:
 
-Create a copy of the example configuration file `cp .env.example .env`.
+1. `cp .env.example .env` to create your own version of all the environment variables needed for the project to work.
+1. Update `.env` to your specific needs. Don't forget to set `DB_USERNAME` and `DB_PASSWORD` with the settings used behind.
+1. Run `composer install --no-interaction --no-suggest --no-dev` to install all packages.
+1. Run `php artisan key:generate` to generate an application key. This will set `APP_KEY` with the right value automatically.
+1. Run `php artisan setup:production -v` to run the migrations, seed the database and symlink folders.
+1. *Optional*: Setup the queues with Redis, Beanstalk or Amazon SQS: see optional instruction of [generic installation](generic.md#setup-queues)
+1. *Optional*: Setup the access tokens to use the API follow optional instruction of [generic installation](generic.md#setup-access-tokens)
 
-Now update `.env` with your specific needs. If you would run the setup with the exact commands used above your file should look like this:
+### 4. Configure cron job
 
-```
-# Two choices: local|production. Use local if you want to install Monica as a
-# development version. Use production otherwise.
-APP_ENV=local
+Monica requires some background processes to continuously run. The list of things Monica does in the background is described [here](https://github.com/monicahq/monica/blob/master/app/Console/Kernel.php#L63).
+Basically those crons are needed to send reminder emails and check if a new version is available.
+To do this, setup a cron that runs every minute that triggers the following command `php artisan schedule:run`.
 
-# true if you want to show debug information on errors. For production, put this
-# to false.
-APP_DEBUG=false
-
-# The encryption key. This is the most important part of the application. Keep
-# this secure otherwise, everyone will be able to access your application.
-# Must be 32 characters long exactly.
-# Use `php artisan key:generate` to generate a random key.
-APP_KEY=ChangeMeBy32KeyLengthOrGenerated
-
-# The URL of your application.
-APP_URL=http://localhost
-
-# Database information
-# To keep this information secure, we urge you to change the default password
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=monica
-DB_USERNAME=homestead
-DB_PASSWORD=secret
-DB_TEST_DATABASE=monica_test
-DB_TEST_USERNAME=homestead
-DB_TEST_PASSWORD=secret
-
-# Mail credentials used to send emails from the application.
-MAIL_DRIVER=smtp
-MAIL_HOST=mailtrap.io
-MAIL_PORT=2525
-MAIL_USERNAME=null
-MAIL_PASSWORD=null
-MAIL_ENCRYPTION=null
-MAIL_FROM_ADDRESS=ValidEmailAddress
-MAIL_FROM_NAME="Some Name"
-APP_EMAIL_NEW_USERS_NOTIFICATION=EmailThatWillSendNotificationsForNewUser
-
-# Default timezone for new users. Users can change this setting inside the
-# application at their leisure.
-# Must be exactly one of the timezones used in this list:
-# https://github.com/monicahq/monica/blob/master/resources/views/settings/index.blade.php#L70
-APP_DEFAULT_TIMEZONE=US/Eastern
-
-# Ability to disable signups on your instance.
-# Can be true or false. Default to false.
-APP_DISABLE_SIGNUP=true
-
-# Frequency of creation of new log files. Logs are written when an error occurs.
-# Possible values: single|daily|syslog|errorlog
-APP_LOG=daily
-
-# Specific to the hosted version on .com. You probably don't need those.
-# Let them empty if you don't need them.
-GOOGLE_ANALYTICS_APP_ID=
-INTERCOM_APP_ID=
-
-# Error tracking. Specific to hosted version on .com. You probably don't need
-# those.
-SENTRY_SUPPORT=false
-SENTRY_DSN=
-
-# Send a daily ping to https://version.monicahq.com to check if a new version
-# is available. When a new version is detected, you will have a message in the
-# UI, as well as the release notes for the new changes. Can be true or false.
-# Default to true.
-CHECK_VERSION=true
-
-# Have access to paid features available on https://monicahq.com, for free.
-# Can be true or false. Default to false.
-# If set to true, that means your users will have to pay to access the paid
-# features. We use Stripe to do this.
-REQUIRES_SUBSCRIPTION=false
-
-# ONLY NECESSARY IF MONICA REQUIRES A SUBSCRIPTION TO WORK
-# Leave blank unless you know what you are doing.
-STRIPE_KEY=
-STRIPE_SECRET=
-PAID_PLAN_FRIENDLY_NAME=
-PAID_PLAN_ID=
-PAID_PLAN_PRICE=
-
-# Change this only if you know what you are doing
-CACHE_DRIVER=database
-SESSION_DRIVER=file
-QUEUE_DRIVER=sync
-
-# Default filesystem to store uploaded files.
-# Possible values: public|s3
-DEFAULT_FILESYSTEM=public
-
-# AWS keys for S3 when using this storage method
-AWS_KEY=
-AWS_SECRET=
-AWS_REGION=us-east-1
-AWS_BUCKET=
-AWS_SERVER=
+Create a new `/etc/cron.d/monica` file with:
+```sh
+echo "* * * * * sudo -u www-data php /var/www/monica/artisan schedule:run" | sudo tee /etc/cron.d/monica
 ```
 
-Then run the following instructions:
-* Run `php artisan key:generate` to generate an application key. This will set `APP_KEY` with the right value automatically.
-* Open the file `.env` to set the different variables needed by the project. The file comes with predefined values - you won't have to change most of them.
-* Run `php artisan setup:production` to run the migrations, seed the database and symlink folders.
-* Optional: run `php artisan passport:install` to generate the secure asset tokens required for the API. If you don't plan to use the API, don't do this step.
+### 5. Configure Apache webserver
 
-#### 8. Configure cron job
+1. Give proper permissions to the project directory by running:
 
-As recommended by the generic installation instructions we create a cronjob which runs `artisan schedule:run` every minute.
-
-For this execute this command:
-```
-sudo crontab -e
+```sh
+sudo chown -R www-data:www-data /var/www/monica
+sudo chmod -R 775 /var/www/monica/storage
 ```
 
-And then add this line to the bottom of the window that opens.
-
-```
-* * * * * sudo -u www-data php /var/www/html/artisan schedule:run
-```
-
-#### 9. Configure Apache webserver
-
-We need to enable the rewrite module of the Apache webserver:
-
-```
+2. Enable the rewrite module of the Apache webserver:
+```sh
 sudo a2enmod rewrite
 ```
 
-Now look for this section in the `/etc/apache2/apache2.conf` file.
+3. Configure a new monica site in apache by doing:
 
-```
-<Directory /var/www>
-        Options Indexes FollowSymLinks
-        AllowOverride None
-        Require all granted
-</Directory>
+```sh
+sudo nano /etc/apache2/sites-available/monica.conf
 ```
 
-and change it to:
+Then, in the `nano` text editor window you just opened, copy the following - swapping the `**YOUR IP ADDRESS/DOMAIN**` with your server's IP address/associated domain:
 
-```
-<Directory /var/www/monica>
+```html
+<VirtualHost *:80>
+    ServerName **YOUR IP ADDRESS/DOMAIN**
+
+    ServerAdmin webmaster@localhost
+    DocumentRoot /var/www/monica/public
+
+    <Directory /var/www/monica/public>
         Options Indexes FollowSymLinks
         AllowOverride All
         Require all granted
-</Directory>
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
 ```
 
-Save the apache2.conf file and open `/etc/apache2/sites-enabled/000-default.conf` and look for this line:
+4. Apply the new `.conf` file and restart Apache. You can do that by running:
 
-```
-DocumentRoot /var/www/html
-```
-and change it to:
-```
-DocumentRoot /var/www/monica/public
-```
+```sh
+sudo a2dissite 000-default.conf
+sudo a2ensite monica.conf
 
-After you save the 000-default.conf file you can finally restart Apache and are up and running.
-```
+# Enable php7.2 fpm, and restart apache
+sudo a2enmod proxy_fcgi setenvif
+sudo a2enconf php7.2-fpm
+sudo service php7.2-fpm restart
 sudo service apache2 restart
 ```
+
+
+### Final step
+
+The final step is to have fun with your newly created instance, which should be up and running to `http://localhost`.
