@@ -177,6 +177,9 @@ Route::middleware(['auth', 'verified', 'mfa'])->group(function () {
         // Activities
         Route::get('/people/{contact}/activities', 'Contacts\\ActivitiesController@index')->name('activities.index');
         Route::get('/people/{contact}/activities/{year}', 'Contacts\\ActivitiesController@year')->name('activities.year');
+
+        // Metadata
+        Route::get('/people/{contact}/metadata', 'Contacts\\MetadataController@form');
     });
 
     // Activities
