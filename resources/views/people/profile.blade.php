@@ -86,7 +86,7 @@
                   {{ trans('people.life_event_list_tab_life_events') }} ({{ $contact->lifeEvents()->count() }})
                 </span>
                 <span @click="updateDefaultProfileView('notes')" :class="[global_profile_default_view == 'notes' ? 'f6 fl bb bt ph3 pv2 dib b br--right br mb4 b--gray-monica' : 'f6 fl bb bt ph3 pv2 dib bg-gray-monica br--right br pointer mb4 b--gray-monica']">{{ trans('people.life_event_list_tab_other') }}</span>
-                <span :class="[global_profile_default_view == 'meta' ? 'f6 fl bb bt ph3 pv2 dib b br--right br mb4 b--gray-monica' : 'f6 fl bb bt ph3 pv2 dib bg-gray-monica br--right br pointer mb4 b--gray-monica']">Metadata</span>
+                <span @click="updateDefaultProfileView('meta')" :class="[global_profile_default_view == 'meta' ? 'f6 fl bb bt ph3 pv2 dib b br--right br mb4 b--gray-monica' : 'f6 fl bb bt ph3 pv2 dib bg-gray-monica br--right br pointer mb4 b--gray-monica']">Metadata</span>
                 <span @click="updateDefaultProfileView('photos')" :class="[global_profile_default_view == 'photos' ? 'f6 fl bb bt ph3 pv2 dib b br2 br--right br mb4 b--gray-monica' : 'f6 fl bb bt ph3 pv2 dib bg-gray-monica br2 br--right br pointer mb4 b--gray-monica']">Photos</span>
               </div>
             </div>
@@ -156,7 +156,7 @@
 
             </div>
 
-            <div v-if="global_profile_default_view == 'meta'"">
+            <div v-if="global_profile_default_view == 'meta'">
               <div class="row section">
                 @include('people.metadata.index')
               </div>

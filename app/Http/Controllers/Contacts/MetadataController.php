@@ -12,8 +12,9 @@ use App\Http\Requests\People\NoteToggleRequest;
 class MetadataController extends Controller
 {
 
-    public function form()
+    public function index()
     {
-        return view('people.metadata.form');
+      //return data as something that can be read by vue
+        // return view('people.metadata.form');
     }
 }

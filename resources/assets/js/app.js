@@ -219,6 +219,11 @@ Vue.component(
   require('./components/people/photo/PhotoList.vue').default
 );
 
+Vue.component(
+  'metadata',
+  require('./components/people/Metadata.vue').default
+);
+
 // Journal
 Vue.component(
   'journal-list',
