@@ -23,9 +23,12 @@ use App\Services\Contact\Contact\CreateContact;
 use App\Services\Contact\Contact\UpdateContact;
 use App\Services\Contact\Contact\DestroyContact;
 use App\Http\Resources\Contact\ContactShort as ContactResource;
+use Appstract\Meta\Metable;
 
 class ContactsController extends Controller
 {
+    use Metable;
+
     /**
      * Display a listing of the resource.
      *
@@ -293,6 +296,9 @@ class ContactsController extends Controller
             'name' => '---',
         ]);
 
+        //metadata
+        $contact->getAllMeta();
+
         return view('people.profile')
             ->withLoveRelationships($loveRelationships)
             ->withFamilyRelationships($familyRelationships)
@@ -305,7 +311,8 @@ class ContactsController extends Controller
             ->withWeather($contact->getWeather())
             ->withDays($days)
             ->withMonths($months)
-            ->withYears(DateHelper::getListOfYears());
+            ->withYears(DateHelper::getListOfYears())
+            ->withMetadata($metadata);
     }
 
     /**
