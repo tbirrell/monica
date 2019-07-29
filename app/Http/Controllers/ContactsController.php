@@ -23,11 +23,9 @@ use App\Services\Contact\Contact\CreateContact;
 use App\Services\Contact\Contact\UpdateContact;
 use App\Services\Contact\Contact\DestroyContact;
 use App\Http\Resources\Contact\ContactShort as ContactResource;
-use Appstract\Meta\Metable;
 
 class ContactsController extends Controller
 {
-    use Metable;
 
     /**
      * Display a listing of the resource.
@@ -297,8 +295,9 @@ class ContactsController extends Controller
         ]);
 
         //metadata
-        $contact->getAllMeta();
-
+        $contact->addOrUpdateMeta('testing', ['test' => 'tapl123']);
+        $metadata = $contact->getAllMeta();
+dump($metadata);
         return view('people.profile')
             ->withLoveRelationships($loveRelationships)
             ->withFamilyRelationships($familyRelationships)

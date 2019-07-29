@@ -35,10 +35,11 @@ use App\Http\Resources\Address\Address as AddressResource;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use App\Http\Resources\Contact\ContactShort as ContactShortResource;
 use App\Http\Resources\ContactField\ContactField as ContactFieldResource;
-
+use Appstract\Meta\Metable;
 class Contact extends Model
 {
     use Searchable;
+    use Metable;
 
     protected $dates = [
     'last_talked_to',

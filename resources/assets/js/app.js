@@ -14,6 +14,7 @@ require('./bootstrap');
  */
 
 window.Vue = require('vue');
+Vue.config.devtools = true
 
 // Notifications
 import Notifications from 'vue-notification';

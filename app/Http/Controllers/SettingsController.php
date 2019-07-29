@@ -551,7 +551,7 @@ class SettingsController
      */
     public function updateDefaultProfileView(Request $request)
     {
-        $allowedValues = ['life-events', 'notes', 'photos'];
+        $allowedValues = ['life-events', 'notes', 'photos', 'meta'];
         $view = $request->get('name');
 
         if (! in_array($view, $allowedValues)) {
