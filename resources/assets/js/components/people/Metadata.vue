@@ -30,12 +30,16 @@ export default {
     };
   },
 
+  mounted() {
+    this.getMetadata();
+  },
+
   methods: {
 
     getMetadata() {
       axios.get('people/' + this.hash + '/metadata')
         .then(response => {
-          this.metadata = response.data.data;
+          this.metadata = response.data;
         });
     },
 
