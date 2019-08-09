@@ -293,10 +293,6 @@ class ContactsController extends Controller
             'name' => '---',
         ]);
 
-        //metadata
-        $contact->addOrUpdateMeta('testing', ['test' => 'tapl123']);
-        $metadata = $contact->getAllMeta();
-dump($metadata);
         return view('people.profile')
             ->withLoveRelationships($loveRelationships)
             ->withFamilyRelationships($familyRelationships)
@@ -309,8 +305,7 @@ dump($metadata);
             ->withWeather($contact->getWeather())
             ->withDays($days)
             ->withMonths($months)
-            ->withYears(DateHelper::getListOfYears())
-            ->withMetadata($metadata);
+            ->withYears(DateHelper::getListOfYears());
     }
 
     /**

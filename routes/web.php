@@ -180,6 +180,7 @@ Route::middleware(['auth', 'verified', 'mfa'])->group(function () {
 
         // Metadata
         Route::get('/people/{contact}/metadata', 'Contacts\\MetadataController@index');
+        Route::post('/people/{contact}/metadata', 'Contacts\\MetadataController@save');
     });
 
     // Activities

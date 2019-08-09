@@ -11,10 +11,13 @@ use App\Http\Requests\People\NoteToggleRequest;
 
 class MetadataController extends Controller
 {
-
-    public function index()
+    /**
+     * Get all metadata for this contact.
+     */
+    public function index(Contact $contact)
     {
-      //return data as something that can be read by vue
-        // return view('people.metadata.form');
+      $metadata = $contact->getAllMeta();
+
+      return $metadata;
     }
 }
