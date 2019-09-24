@@ -131,10 +131,18 @@ class DateHelper
      */
     public static function getShortDate($date, $atFaceValue = false) : string
     {
-        $date = new Date($date);
-        $format = trans('format.short_date_year', [], Date::getLocale());
+        return self::formatDate($date, 'format.short_date_year');
+    }
 
-        return $date->format($format) ?: '';
+    /**
+     * Return a date in a full format like "October 29, 1981".
+     *
+     * @param string $date
+     * @return string
+     */
+    public static function getFullDate($date) : string
+    {
+        return self::formatDate($date, 'format.full_date_year');
     }
 
     /**
@@ -146,10 +154,7 @@ class DateHelper
      */
     public static function getShortMonth($date, $atFaceValue = false) : string
     {
-        $date = new Date($date, ($atFaceValue ? null : static::getTimezone()));
-        $format = trans('format.short_month', [], Date::getLocale());
-
-        return $date->format($format) ?: '';
+        return self::formatDate($date, 'format.short_month');
     }
 
     /**
@@ -163,10 +168,7 @@ class DateHelper
      */
     public static function getFullMonthAndDate($date, $atFaceValue = false) : string
     {
-        $date = new Date($date, ($atFaceValue ? null : static::getTimezone()));
-        $format = trans('format.full_month_year', [], Date::getLocale());
-
-        return $date->format($format) ?: '';
+        return self::formatDate($date, 'format.full_month_year');
     }
 
     /**
@@ -179,10 +181,7 @@ class DateHelper
      */
     public static function getShortDay($date, $atFaceValue = false) : string
     {
-        $date = new Date($date, ($atFaceValue ? null : static::getTimezone()));
-        $format = trans('format.short_day', [], Date::getLocale());
-
-        return $date->format($format) ?: '';
+        return self::formatDate($date, 'format.short_day');
     }
 
     /**
@@ -195,10 +194,7 @@ class DateHelper
      */
     public static function getShortDateWithoutYear($date, $atFaceValue = false) : string
     {
-        $date = new Date($date, ($atFaceValue ? null : static::getTimezone()));
-        $format = trans('format.short_date', [], Date::getLocale());
-
-        return $date->format($format) ?: '';
+        return self::formatDate($date, 'format.short_date');
     }
 
     /**
@@ -211,8 +207,19 @@ class DateHelper
      */
     public static function getShortDateWithTime($date, $atFaceValue = false) : string
     {
-        $date = new Date($date, ($atFaceValue ? null : static::getTimezone()));
-        $format = trans('format.short_date_year_time', [], Date::getLocale());
+        return self::formatDate($date, 'format.short_date_year_time');
+    }
+
+    /**
+     * Return a date in a given format.
+     *
+     * @param string $date
+     * @return string
+     */
+    private static function formatDate($date, $format) : string
+    {
+        $date = new Date($date, static::getTimezone());
+        $format = trans($format, [], Date::getLocale());
 
         return $date->format($format) ?: '';
     }
@@ -263,13 +270,13 @@ class DateHelper
      * @param  string $interval
      * @return Carbon
      */
-    public static function getNextTheoriticalBillingDate(String $interval) : Carbon
+    public static function getNextTheoriticalBillingDate(string $interval) : Carbon
     {
         if ($interval == 'monthly') {
-            return now(static::getTimezone())->addMonth();
+            return now()->addMonth();
         }
 
-        return now(static::getTimezone())->addYear();
+        return now()->addYear();
     }
 
     /**

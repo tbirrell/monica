@@ -127,8 +127,11 @@ $factory->define(App\Models\Contact\Contact::class, function (Faker\Generator $f
             ])->id;
         },
         'uuid' => Str::uuid(),
+        'default_avatar_color' => '#ffffff',
+        'avatar_default_url' => 'avatars/img.png',
     ];
 });
+
 $factory->state(App\Models\Contact\Contact::class, 'partial', [
     'is_partial' => 1,
 ]);

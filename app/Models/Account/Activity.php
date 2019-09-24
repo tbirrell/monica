@@ -6,7 +6,6 @@ use Parsedown;
 use App\Helpers\DateHelper;
 use App\Traits\Journalable;
 use App\Models\Contact\Contact;
-use App\Models\Journal\JournalEntry;
 use App\Interfaces\IsJournalableInterface;
 use App\Models\ModelBindingHasher as Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -48,7 +47,11 @@ class Activity extends Model implements IsJournalableInterface
      *
      * @var array
      */
-    protected $with = ['type'];
+    protected $with = [
+        'account',
+        'type',
+        'contacts',
+    ];
 
     /**
      * Get the account record associated with the activity.
@@ -78,14 +81,6 @@ class Activity extends Model implements IsJournalableInterface
     public function type()
     {
         return $this->belongsTo(ActivityType::class, 'activity_type_id');
-    }
-
-    /**
-     * Get all of the activities journal entries.
-     */
-    public function journalEntries()
-    {
-        return $this->morphMany(JournalEntry::class, 'journalable');
     }
 
     /**
