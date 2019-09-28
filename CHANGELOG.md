@@ -10,10 +10,26 @@
 
 ### Fixes:
 
-* Remove monica:clean command confirmation
+*
 
 
 # RELEASED VERSIONS:
+
+## v2.15.2 - 2019-09-26
+
+### Enhancements:
+
+* Revert depends on php7.2+
+
+
+## v2.15.1 - 2019-09-24
+
+### Fixes:
+
+* Fix people header file
+* Fix query and scope searches with table prefix
+* Remove monica:clean command confirmation
+
 
 ## v2.15.0 - 2019-09-22
 
