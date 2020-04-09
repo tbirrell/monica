@@ -41,6 +41,7 @@
         <contact-favorite hash="{{ $contact->hashID() }}" :starred="{{ \Safe\json_encode($contact->is_starred) }}"></contact-favorite>
         @if(! is_null($contact->maiden_name))
           <span class="f6 db-ns" id="maidenName">(née {{$contact->maiden_name}})</span>
+        @endif
         @if ($contact->job)
         <span class="db f5 normal">{{ $contact->job }}
           @if ($contact->company)
