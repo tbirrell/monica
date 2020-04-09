@@ -6,6 +6,7 @@ use App\Models\User\User;
 use App\Helpers\DateHelper;
 use App\Models\Contact\Debt;
 use Illuminate\Http\Request;
+use App\Helpers\AccountHelper;
 use function Safe\json_encode;
 use App\Helpers\InstanceHelper;
 use Illuminate\Support\Collection;
@@ -69,9 +70,9 @@ class DashboardController extends Controller
 
         // Load the reminderOutboxes for the upcoming three months
         $reminderOutboxes = [
-            0 => auth()->user()->account->getRemindersForMonth(0),
-            1 => auth()->user()->account->getRemindersForMonth(1),
-            2 => auth()->user()->account->getRemindersForMonth(2),
+            0 => AccountHelper::getUpcomingRemindersForMonth(auth()->user()->account, 0),
+            1 => AccountHelper::getUpcomingRemindersForMonth(auth()->user()->account, 1),
+            2 => AccountHelper::getUpcomingRemindersForMonth(auth()->user()->account, 2),
         ];
 
         $data = [
@@ -171,7 +172,7 @@ class DashboardController extends Controller
      */
     public function setTab(Request $request)
     {
-        auth()->user()->dashboard_active_tab = $request->get('tab');
+        auth()->user()->dashboard_active_tab = $request->input('tab');
         auth()->user()->save();
     }
 }

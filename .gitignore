@@ -16,11 +16,12 @@ npm-debug.log*
 .deploy.json
 /.idea
 yarn-error.log
-/tests/Cypress/screenshots
-/tests/Cypress/videos
+/tests/cypress/screenshots
+/tests/cypress/videos
 php-extensions-*.tar.bz2
 monicadump.sql
 .scannerwork/
 .sentry-release
 .phpunit.result.cache
 .composer
+.idea

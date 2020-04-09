@@ -18,10 +18,10 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
 RUN apk update && apk upgrade
 RUN apk add --virtual .build-deps \
         curl openssl bash
-RUN apk add netcat-openbsd \
+RUN apk add supervisor netcat-openbsd rsync \
         #- base
         php7 php7-intl php7-openssl php7-ctype \
-        php7-zip php7-zlib \
+        php7-zip php7-zlib php7-opcache \
         php7-redis \
         #- Authentication Guards
         php7-session php7-tokenizer \
@@ -35,7 +35,7 @@ RUN apk add netcat-openbsd \
         php7-phar php7-json php7-iconv \
         #- laravel/framework sabre/vobject
         php7-mbstring \
-        #- league/flysystem-aws-s3-v3 
+        #- league/flysystem-aws-s3-v3
         php7-simplexml \
         #- sabre/vobject sabre/xml
         php7-xml php7-xmlreader php7-xmlwriter \
@@ -49,20 +49,23 @@ RUN apk add netcat-openbsd \
         php7-curl \
         #- cbor-php (webauthn)
         php7-gmp \
-# apache variant
-        apache2 php7-apache2
+        #- web-token/jwt-signature-algorithm-eddsa
+        php7-sodium
 
 # Create a user to own all the code and assets and give them a working
 # directory
-RUN mkdir -p /var/www/monica; \
+RUN mkdir -p /usr/src/monica; \
     grep -q apache /etc/group || addgroup -S apache; \
-    adduser -D monica apache -h /var/www/monica
-WORKDIR /var/www/monica
+    adduser -D monica apache -h /usr/src/monica
+WORKDIR /usr/src/monica
+VOLUME /var/www/monica
+
 
 # Copy the local (outside Docker) source into the working directory,
 # copy system files into their proper homes, and set file ownership
 # correctly
-COPY readme.md \
+COPY --chown=monica:monica \
+    readme.md \
     CONTRIBUTING.md \
     CHANGELOG.md \
     CONTRIBUTORS \
@@ -71,20 +74,26 @@ COPY readme.md \
     composer.json \
     composer.lock \
     ./
-COPY app ./app
-COPY bootstrap ./bootstrap
-COPY config ./config
-COPY database ./database
-COPY public ./public
-COPY resources ./resources
-COPY routes ./routes
+COPY --chown=monica:monica app ./app
+COPY --chown=monica:monica bootstrap ./bootstrap
+COPY --chown=monica:monica config ./config
+COPY --chown=monica:monica database ./database
+COPY --chown=monica:monica public ./public
+COPY --chown=monica:monica resources ./resources
+COPY --chown=monica:monica routes ./routes
 
 RUN mkdir -p bootstrap/cache; \
     mkdir -p storage; \
-    chown -R monica:monica .; \
-    chgrp -R apache bootstrap/cache storage; \
+    chown -R monica:apache bootstrap/cache storage; \
     chmod -R g+w bootstrap/cache storage
-COPY .env.example .env
+COPY --chown=monica:monica .env.example .env
+
+# Php
+ENV PHP_OPCACHE_VALIDATE_TIMESTAMPS="0" \
+    PHP_OPCACHE_MAX_ACCELERATED_FILES="20000" \
+    PHP_OPCACHE_MEMORY_CONSUMPTION="192" \
+    PHP_OPCACHE_MAX_WASTED_PERCENTAGE="10"
+COPY scripts/docker/opcache.ini /usr/php7/conf.d/opcache.ini
 
 # Sentry
 RUN echo $VCS_REF > .sentry-release; \
@@ -99,17 +108,20 @@ RUN install-composer.sh
 # Install composer dependencies
 USER monica
 RUN composer global require hirak/prestissimo; \
-    composer install --no-interaction --no-suggest --no-progress --no-dev; \
+    composer install --no-interaction --no-suggest --no-progress --no-dev --ignore-platform-reqs; \
     composer global remove hirak/prestissimo; \
-    composer clear-cache
+    composer clear-cache; \
+    rm -rf .composer
+
 USER root
+WORKDIR /var/www/monica
 
 # Set crontab for schedules
 RUN set -ex && \
 	cd /etc/periodic/hourly/ && \
 	{ \
 		echo '#!/bin/sh'; \
-		echo '/usr/bin/php /var/www/monica/artisan schedule:run -v'; \
+		echo '/usr/bin/php /var/www/monica/artisan schedule:run -v > /proc/1/fd/1 2> /proc/1/fd/2'; \
 	} | tee monica && \
 	chmod a+x monica
 
@@ -117,12 +129,21 @@ RUN set -ex && \
 RUN apk del .build-deps && \
     rm -rf /var/cache/apk/*
 
-COPY scripts/docker/entrypoint.sh /usr/local/bin/
+COPY scripts/docker/upgrade.exclude \
+    /usr/local/share/
+COPY scripts/docker/entrypoint.sh \
+    scripts/docker/cron.sh \
+    scripts/docker/queue.sh \
+    /usr/local/bin/
 ENTRYPOINT ["entrypoint.sh"]
 
 # Apache2
-COPY scripts/docker/apache2-foreground /usr/local/sbin/
+RUN apk add apache2 php7-apache2
+COPY scripts/docker/apache2-foreground /usr/local/bin/
 COPY scripts/docker/000-default.conf /etc/apache2/conf.d/
+RUN echo 'LoadModule rewrite_module modules/mod_rewrite.so' > /etc/apache2/conf.d/rewrite.conf
+RUN echo 'ServerName "monica"' > /etc/apache2/conf.d/hostname.conf
 
 EXPOSE 80
+
 CMD ["apache2-foreground"]

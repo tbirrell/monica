@@ -15,13 +15,13 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', 'Auth\LoginController@showLoginOrRegister')->name('login');
+Route::get('/', 'Auth\LoginController@showLoginOrRegister')->name('loginRedirect');
 
 
 Auth::routes(['verify' => true]);
 
-Route::get('/invitations/accept/{key}', 'SettingsController@acceptInvitation');
-Route::post('/invitations/accept/{key}', 'SettingsController@storeAcceptedInvitation')->name('invitations.accept');
+Route::get('/invitations/accept/{key}', 'Auth\InvitationController@show')->name('invitations.accept');
+Route::post('/invitations/accept/{key}', 'Auth\InvitationController@store')->name('invitations.send');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/logout', 'Auth\LoginController@logout');
@@ -149,10 +149,6 @@ Route::middleware(['auth', 'verified', 'mfa'])->group(function () {
             'index', 'store', 'update', 'destroy',
         ]);
 
-        // Gifts
-        Route::resource('people/{contact}/gifts', 'Contacts\\GiftsController')->except(['show']);
-        Route::post('/people/{contact}/gifts/{gift}/toggle', 'Contacts\\GiftsController@toggle');
-
         // Debt
         Route::resource('people/{contact}/debts', 'Contacts\\DebtController')->except(['index', 'show']);
 
@@ -181,17 +177,14 @@ Route::middleware(['auth', 'verified', 'mfa'])->group(function () {
         Route::put('/people/{contact}/archive', 'ContactsController@archive');
 
         // Activities
-        Route::get('/people/{contact}/activities', 'Contacts\\ActivitiesController@index')->name('activities.index');
+        Route::get('/activityCategories', 'Contacts\\ActivitiesController@categories')->name('activities.categories');
+        Route::resource('people/{contact}/activities', 'Contacts\\ActivitiesController')->only(['index']);
+        Route::get('/people/{contact}/activities/contacts', 'Contacts\\ActivitiesController@contacts')->name('activities.contacts');
+        Route::get('/people/{contact}/activities/summary', 'Contacts\\ActivitiesController@summary')->name('activities.summary');
         Route::get('/people/{contact}/activities/{year}', 'Contacts\\ActivitiesController@year')->name('activities.year');
-    });
 
-    // Activities
-    Route::name('activities.')->group(function () {
-        Route::get('/activities/add/{contact}', 'ActivitiesController@create')->name('add');
-        Route::post('/activities/store/{contact}', 'ActivitiesController@store')->name('store');
-        Route::get('/activities/{activity}/edit/{contact}', 'ActivitiesController@edit')->name('edit');
-        Route::put('/activities/{activity}/{contact}', 'ActivitiesController@update')->name('update');
-        Route::delete('/activities/{activity}/{contact}', 'ActivitiesController@destroy')->name('delete');
+        // Audit logs
+        Route::get('/people/{contact}/auditlogs', 'Contacts\\ContactAuditLogController@index')->name('auditlogs');
     });
 
     Route::name('journal.')->group(function () {
@@ -265,11 +258,15 @@ Route::middleware(['auth', 'verified', 'mfa'])->group(function () {
             Route::get('/settings/subscriptions/invoice/{invoice}', 'Settings\\SubscriptionsController@downloadInvoice')->name('invoice');
             Route::get('/settings/subscriptions/downgrade', 'Settings\\SubscriptionsController@downgrade')->name('downgrade');
             Route::post('/settings/subscriptions/downgrade', 'Settings\\SubscriptionsController@processDowngrade');
+            Route::get('/settings/subscriptions/archive', 'Settings\\SubscriptionsController@archive')->name('archive');
+            Route::post('/settings/subscriptions/archive', 'Settings\\SubscriptionsController@processArchive');
             Route::get('/settings/subscriptions/downgrade/success', 'Settings\\SubscriptionsController@downgradeSuccess')->name('downgrade.success');
             if (! App::environment('production')) {
                 Route::get('/settings/subscriptions/forceCompletePaymentOnTesting', 'Settings\\SubscriptionsController@forceCompletePaymentOnTesting')->name('forceCompletePaymentOnTesting');
             }
         });
+
+        Route::get('/settings/auditlogs', 'Settings\\AuditLogController@index')->name('auditlog.index');
 
         Route::name('tags.')->group(function () {
             Route::get('/settings/tags', 'SettingsController@tags')->name('index');
@@ -290,9 +287,6 @@ Route::middleware(['auth', 'verified', 'mfa'])->group(function () {
             Route::post('/settings/security/2fa-enable', 'Settings\\MultiFAController@validateTwoFactor');
             Route::get('/settings/security/2fa-disable', 'Settings\\MultiFAController@disableTwoFactor')->name('2fa-disable');
             Route::post('/settings/security/2fa-disable', 'Settings\\MultiFAController@deactivateTwoFactor');
-            Route::get('/settings/security/u2f/register', 'Settings\\MultiFAController@u2fRegisterData');
-            Route::post('/settings/security/u2f/register', 'Settings\\MultiFAController@u2fRegister');
-            Route::delete('/settings/security/u2f/remove/{u2fKeyId}', 'Settings\\MultiFAController@u2fRemove');
 
             Route::post('/settings/security/generate-recovery-codes', 'Settings\\RecoveryCodesController@store');
             Route::post('/settings/security/recovery-codes', 'Settings\\RecoveryCodesController@index');

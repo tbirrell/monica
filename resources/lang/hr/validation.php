@@ -67,6 +67,7 @@ return [
     'not_in'               => 'Odabrano polje :attribute nije ispravno.',
     'not_regex'            => 'Format polja :attribute je neispravan.',
     'numeric'              => 'Polje :attribute mora biti broj.',
+    'password' => 'The password is incorrect.',
     'present'              => 'Polje :attribute mora biti prisutno.',
     'regex'                => 'Polje :attribute se ne podudara s formatom.',
     'required'             => 'Polje :attribute je obavezno.',
@@ -119,4 +120,12 @@ return [
 
     'attributes' => [],
 
+    'vue' => [
+        'max' => [
+            'numeric' => '{field} may not be greater than {max}.',
+            'string'  => '{field} may not be greater than {max} characters.',
+        ],
+        'required' => '{field} is required.',
+        'url' => '{field} is not a valid URL.',
+    ],
 ];

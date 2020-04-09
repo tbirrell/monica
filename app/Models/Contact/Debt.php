@@ -9,7 +9,8 @@ use App\Models\ModelBindingHasherWithContact as Model;
 /**
  * @property Account $account
  * @property Contact $contact
- * @method static Builder due()s
+ * @property int $amount
+ * @method static Builder due()
  * @method static Builder owed()
  * @method static Builder inProgress()
  */

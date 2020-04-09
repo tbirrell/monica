@@ -10,8 +10,14 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
+ * @property int $id
  * @property Account $account
  * @property User $invitedBy
+ * @property int $account_id
+ * @property IsJournalableInterface $journalable
+ * @property int $journalable_id
+ * @property string $journalable_type
+ * @property \Illuminate\Support\Carbon|null $date
  */
 class JournalEntry extends Model
 {
@@ -61,13 +67,13 @@ class JournalEntry extends Model
      * @param \App\Interfaces\IsJournalableInterface $resourceToLog
      * @return self
      */
-    public static function add(IsJournalableInterface $resourceToLog) : self
+    public static function add(IsJournalableInterface $resourceToLog): self
     {
         $journal = new self;
         $journal->account_id = $resourceToLog->account_id;
         $journal->date = now();
         if ($resourceToLog instanceof \App\Models\Account\Activity) {
-            $journal->date = $resourceToLog->date_it_happened;
+            $journal->date = $resourceToLog->happened_at;
         } elseif ($resourceToLog instanceof \App\Models\Journal\Entry) {
             $journal->date = $resourceToLog->attributes['date'];
         }
@@ -83,7 +89,7 @@ class JournalEntry extends Model
      * @param \App\Interfaces\IsJournalableInterface $resourceToLog
      * @return self
      */
-    public function edit(IsJournalableInterface $resourceToLog) : self
+    public function edit(IsJournalableInterface $resourceToLog): self
     {
         if ($resourceToLog instanceof \App\Models\Journal\Entry) {
             $this->date = $resourceToLog->attributes['date'];

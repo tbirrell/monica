@@ -22,7 +22,7 @@
 
   <div class="col-12 debts-list">
 
-    <ul class="table">
+    <ul class="table" cy-name="debts-body" cy-items="{{ $contact->debts->implode('id', ',') }}">
       @foreach($contact->debts as $debt)
       <li class="table-row" cy-name="debt-item-{{ $debt->id }}">
         <div class="table-cell date">
@@ -49,15 +49,15 @@
           <a href="{{ route('people.debts.edit', [$contact, $debt]) }}" cy-name="edit-debt-button-{{ $debt->id }}">
             <i class="fa fa-pencil" aria-hidden="true"></i>
           </a>
-          <a href="#" cy-name="delete-debt-button-{{ $debt->id }}" onclick="if (confirm('{{ trans('people.debt_delete_confirmation') }}')) { $(this).closest('.table-row').find('.entry-delete-form').submit(); } return false;">
-            <i class="fa fa-trash-o" aria-hidden="true"></i>
-          </a>
+          <form method="POST" action="{{ route('people.debts.destroy', [$contact, $debt]) }}">
+            @method('DELETE')
+            @csrf
+            <confirm message="{{ trans('people.debt_delete_confirmation') }}" cy-name="delete-debt-button-{{ $debt->id }}" :name="'delete-debt'">
+              <i class="fa fa-trash-o" aria-hidden="true"></i>
+            </confirm>
+          </form>
         </div>
 
-        <form method="POST" action="{{ route('people.debts.destroy', [$contact, $debt]) }}" class="entry-delete-form hidden">
-          {{ method_field('DELETE') }}
-          {{ csrf_field() }}
-        </form>
       </li>
       @endforeach
       <li class="table-row">
