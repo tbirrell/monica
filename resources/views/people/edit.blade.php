@@ -91,7 +91,7 @@
             @endif
           </div>
 
-          {{-- Optional Names --}}
+	  {{-- Optional Names --}}
           <div class="mb3 mb0-ns">
             <div class="dt-ns dt--fixed di">
               <div class="dtc-ns pr2-ns pb0-ns w-100 pb3">
@@ -105,7 +105,7 @@
               </div>
               <div class="dtc-ns pr2-ns pb0-ns w-100 pb3">
                 <form-input
-                v-if="{{ $contact->gender_id }} == 2"
+                v-if="'{{ $contact->gender->type }}' === 'F'"
                   value="{{ $contact->maiden_name }}"
                   :input-type="'text'"
                   :id="'maidenname'"
